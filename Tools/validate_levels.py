@@ -23,6 +23,7 @@ DEFAULT_CATALOG = (
 DEFAULT_SCHEMA = REPOSITORY_ROOT / "Schemas" / "orbit-sort-levels.schema.json"
 
 SUPPORTED_COLORS = {"blue", "red", "yellow"}
+EXPECTED_RING_IDS = ("inner", "middle", "outer")
 LEVEL_ID_PATTERN = re.compile(r"^level_[0-9]{3}$")
 OBJECT_ID_PATTERN = re.compile(r"^[a-z][a-z0-9_]*$")
 
@@ -109,8 +110,8 @@ def validate_level(level: dict[str, Any], context: str, errors: list[str]) -> No
         errors.append(f"{context}.displayName: expected non-empty string")
 
     rings = level.get("rings")
-    if not isinstance(rings, list) or not 2 <= len(rings) <= 3:
-        errors.append(f"{context}.rings: expected 2 or 3 rings")
+    if not isinstance(rings, list) or len(rings) != 3:
+        errors.append(f"{context}.rings: expected exactly 3 rings")
         return
 
     ring_ids: list[str] = []
@@ -132,6 +133,11 @@ def validate_level(level: dict[str, Any], context: str, errors: list[str]) -> No
         if ring_id in ring_capacities:
             errors.append(f"{ring_context}.id: duplicate ring ID {ring_id!r}")
             continue
+        if ring_id != EXPECTED_RING_IDS[ring_index]:
+            errors.append(
+                f"{ring_context}.id: expected "
+                f"{EXPECTED_RING_IDS[ring_index]!r}"
+            )
 
         capacity = ring.get("capacity")
         if not isinstance(capacity, int) or isinstance(capacity, bool):
@@ -221,11 +227,12 @@ def validate_gates(
     ring_capacities: dict[str, int],
     errors: list[str],
 ) -> None:
-    if not isinstance(gates, list) or not gates:
-        errors.append(f"{context}.gates: expected at least one gate")
+    if not isinstance(gates, list) or len(gates) != 2:
+        errors.append(f"{context}.gates: expected exactly 2 gates")
         return
 
     seen_ids: set[str] = set()
+    connected_pairs: set[tuple[str, str]] = set()
     for gate_index, gate in enumerate(gates):
         gate_context = f"{context}.gates[{gate_index}]"
         if not isinstance(gate, dict):
@@ -256,6 +263,12 @@ def validate_gates(
                 errors.append(
                     f"{gate_context}: gate must connect adjacent rings outward"
                 )
+            elif (from_ring, to_ring) in connected_pairs:
+                errors.append(
+                    f"{gate_context}: duplicate adjacent ring portal"
+                )
+            else:
+                connected_pairs.add((from_ring, to_ring))
 
             validate_index(
                 gate.get("fromIndex"),
@@ -272,6 +285,17 @@ def validate_gates(
 
         if gate.get("direction") != "outward":
             errors.append(f"{gate_context}.direction: expected 'outward'")
+
+    if len(ring_ids) == 3:
+        expected_pairs = {
+            (ring_ids[0], ring_ids[1]),
+            (ring_ids[1], ring_ids[2]),
+        }
+        for from_ring, to_ring in expected_pairs - connected_pairs:
+            errors.append(
+                f"{context}.gates: missing portal from "
+                f"{from_ring!r} to {to_ring!r}"
+            )
 
 
 def validate_exits(

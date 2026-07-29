@@ -8,10 +8,21 @@ namespace OrbitSort.Presentation
 {
     public sealed class OrbitSortBoardView : MonoBehaviour
     {
-        private const int CircleSegments = 96;
         private const float TrackHalfWidth = 0.48f;
         private const float MinimumSnapDuration = 0.10f;
         private const float MaximumSnapDuration = 0.24f;
+        private const string ModelResourceRoot = "Models/";
+
+        private static readonly float[] ApprovedRingRadii =
+        {
+            1.80f,
+            3.28f,
+            4.76f
+        };
+
+        private static readonly Quaternion BlenderBoardRotation =
+            Quaternion.AngleAxis(180f, Vector3.up)
+            * Quaternion.AngleAxis(90f, Vector3.right);
 
         private readonly Dictionary<string, float> _ringRadii =
             new Dictionary<string, float>(
@@ -28,15 +39,20 @@ namespace OrbitSort.Presentation
             new Dictionary<MarbleColor, Material>();
 
         private Transform _contentRoot;
+        private GameObject[] _ringModels;
+        private GameObject _portalModel;
+        private GameObject _receiverModel;
+        private GameObject _centerModel;
+        private GameObject _marbleModel;
         private Material _trackMaterial;
         private Material _railMaterial;
-        private Material _warningMaterial;
-        private Material _jammedMaterial;
-        private Material _gateMaterial;
-        private Material _gateReadyMaterial;
+        private Material _portalMaterial;
         private Material _centerMaterial;
         private Material _exitInteriorMaterial;
         private Material _arrowMaterial;
+        private readonly Dictionary<MarbleColor, Material>
+            _receiverMaterials =
+                new Dictionary<MarbleColor, Material>();
         private Coroutine _ringAnimation;
         private string _previewRingId;
         private float _previewBaseAngle;
@@ -44,42 +60,85 @@ namespace OrbitSort.Presentation
 
         public void Initialize()
         {
+            _ringModels = new[]
+            {
+                LoadModel("RingInner"),
+                LoadModel("RingMiddle"),
+                LoadModel("RingOuter")
+            };
+            _portalModel = LoadModel("Portal");
+            _receiverModel = LoadModel("Receiver");
+            _centerModel = LoadModel("CenterHub");
+            _marbleModel = LoadModel("Marble");
+
             _trackMaterial = CreateMaterial(
                 "Track",
-                new Color(0.70f, 0.68f, 0.75f));
+                new Color(0.41f, 0.37f, 0.58f),
+                0.00f,
+                0.58f);
             _railMaterial = CreateMaterial(
                 "Rail",
-                new Color(0.95f, 0.86f, 0.68f));
-            _warningMaterial = CreateMaterial(
-                "Last Gap",
-                new Color(1.00f, 0.65f, 0.13f));
-            _jammedMaterial = CreateMaterial(
-                "Jammed",
-                new Color(0.95f, 0.18f, 0.22f));
-            _gateMaterial = CreateMaterial(
-                "Gate",
-                new Color(0.88f, 0.56f, 0.10f));
-            _gateReadyMaterial = CreateMaterial(
-                "Gate Ready",
-                new Color(0.38f, 0.92f, 0.52f));
+                new Color(0.89f, 0.78f, 0.60f),
+                0.00f,
+                0.72f);
+            _portalMaterial = CreateMaterial(
+                "Portal",
+                new Color(0.92f, 0.48f, 0.035f),
+                0.62f,
+                0.75f);
             _centerMaterial = CreateMaterial(
                 "Center",
-                new Color(0.17f, 0.13f, 0.30f));
+                new Color(0.018f, 0.009f, 0.06f),
+                0.00f,
+                0.52f);
             _exitInteriorMaterial = CreateMaterial(
                 "Exit Interior",
-                new Color(0.06f, 0.04f, 0.12f));
+                new Color(0.018f, 0.009f, 0.06f),
+                0.00f,
+                0.52f);
             _arrowMaterial = CreateMaterial(
                 "Gate Arrow",
-                new Color(1f, 0.97f, 0.88f));
+                new Color(1f, 0.97f, 0.88f),
+                0.00f,
+                0.80f);
 
             _marbleMaterials[MarbleColor.Blue] =
-                CreateMaterial("Blue Marble", new Color(0.10f, 0.50f, 1.00f));
+                CreateMaterial(
+                    "Blue Marble",
+                    new Color(0.025f, 0.24f, 0.95f),
+                    0.05f,
+                    0.90f);
             _marbleMaterials[MarbleColor.Red] =
-                CreateMaterial("Red Marble", new Color(1.00f, 0.22f, 0.18f));
+                CreateMaterial(
+                    "Red Marble",
+                    new Color(0.93f, 0.035f, 0.018f),
+                    0.03f,
+                    0.90f);
             _marbleMaterials[MarbleColor.Yellow] =
                 CreateMaterial(
                     "Yellow Marble",
-                    new Color(1.00f, 0.72f, 0.08f));
+                    new Color(1.00f, 0.54f, 0.015f),
+                    0.03f,
+                    0.89f);
+
+            _receiverMaterials[MarbleColor.Blue] =
+                CreateMaterial(
+                    "Blue Receiver",
+                    new Color(0.015f, 0.22f, 0.95f),
+                    0.10f,
+                    0.82f);
+            _receiverMaterials[MarbleColor.Red] =
+                CreateMaterial(
+                    "Red Receiver",
+                    new Color(0.93f, 0.025f, 0.018f),
+                    0.08f,
+                    0.82f);
+            _receiverMaterials[MarbleColor.Yellow] =
+                CreateMaterial(
+                    "Yellow Receiver",
+                    new Color(1.00f, 0.52f, 0.01f),
+                    0.10f,
+                    0.82f);
         }
 
         public void Render(BoardModel model)
@@ -94,19 +153,24 @@ namespace OrbitSort.Presentation
             content.transform.SetParent(transform, false);
             _contentRoot = content.transform;
 
-            float[] radii = CalculateRadii(model.Rings.Count);
+            if (model.Rings.Count != ApprovedRingRadii.Length)
+            {
+                throw new InvalidOperationException(
+                    "Orbit Sort board art requires exactly three rings.");
+            }
+
             for (int index = 0; index < model.Rings.Count; index++)
             {
                 RingState ring = model.Rings[index];
-                float radius = radii[index];
+                float radius = ApprovedRingRadii[index];
                 _ringRadii[ring.Id] = radius;
                 Transform ringRoot = CreateRingRoot(ring);
                 _ringRoots[ring.Id] = ringRoot;
-                CreateRing(ring, radius, ringRoot);
+                CreateRing(index, ringRoot);
                 CreateMarbles(ring, radius, ringRoot);
             }
 
-            CreateCenter(radii[0]);
+            CreateCenter();
 
             foreach (GateState gate in model.Gates)
             {
@@ -250,38 +314,15 @@ namespace OrbitSort.Presentation
             return root.transform;
         }
 
-        private void CreateRing(
-            RingState ring,
-            float radius,
-            Transform ringRoot)
+        private void CreateRing(int ringIndex, Transform ringRoot)
         {
-            Material rail = ring.GapCount == 0
-                ? _jammedMaterial
-                : ring.GapCount == 1
-                    ? _warningMaterial
-                    : _railMaterial;
-
-            CreateAnnulusObject(
-                $"{ring.Id} Track",
-                radius - TrackHalfWidth,
-                radius + TrackHalfWidth,
-                0.34f,
-                _trackMaterial,
-                ringRoot);
-            CreateAnnulusObject(
-                $"{ring.Id} Inner Rail",
-                radius - TrackHalfWidth - 0.08f,
-                radius - TrackHalfWidth + 0.04f,
-                0.14f,
-                rail,
-                ringRoot);
-            CreateAnnulusObject(
-                $"{ring.Id} Outer Rail",
-                radius + TrackHalfWidth - 0.04f,
-                radius + TrackHalfWidth + 0.08f,
-                0.14f,
-                rail,
-                ringRoot);
+            GameObject geometry = CreateBlenderModel(
+                _ringModels[ringIndex],
+                "Blender Ring Geometry",
+                ringRoot,
+                Vector2.zero,
+                0f);
+            AssignRingMaterials(geometry);
         }
 
         private void CreateMarbles(
@@ -289,13 +330,6 @@ namespace OrbitSort.Presentation
             float radius,
             Transform ringRoot)
         {
-            float circumferenceSpacing =
-                2f * Mathf.PI * radius / ring.Capacity;
-            float diameter = Mathf.Clamp(
-                circumferenceSpacing * 0.62f,
-                0.42f,
-                0.72f);
-
             foreach (KeyValuePair<int, MarbleColor> marble in ring.Marbles)
             {
                 Vector2 point = PointOnCircle(
@@ -303,23 +337,15 @@ namespace OrbitSort.Presentation
                     marble.Key,
                     ring.Capacity);
 
-                GameObject sphere = GameObject.CreatePrimitive(
-                    PrimitiveType.Sphere);
-                sphere.name =
-                    $"{MarbleColorUtility.DisplayName(marble.Value)} Marble";
-                sphere.transform.SetParent(ringRoot, false);
-                sphere.transform.localPosition =
-                    new Vector3(point.x, point.y, -0.12f);
-                sphere.transform.localScale =
-                    new Vector3(diameter, diameter, diameter);
-                sphere.GetComponent<Renderer>().sharedMaterial =
-                    _marbleMaterials[marble.Value];
-
-                Collider collider = sphere.GetComponent<Collider>();
-                if (collider != null)
-                {
-                    Destroy(collider);
-                }
+                GameObject geometry = CreateBlenderModel(
+                    _marbleModel,
+                    $"{MarbleColorUtility.DisplayName(marble.Value)} Marble",
+                    ringRoot,
+                    point,
+                    0f);
+                AssignAllRenderers(
+                    geometry,
+                    _marbleMaterials[marble.Value]);
             }
         }
 
@@ -333,57 +359,13 @@ namespace OrbitSort.Presentation
             Vector2 point = PointOnCircle(radius, angle);
             _gatePositions[gate.Id] = point;
 
-            GameObject bridge = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            bridge.name = gate.Id;
-            bridge.transform.SetParent(_contentRoot, false);
-            bridge.transform.localPosition =
-                new Vector3(point.x, point.y, -0.28f);
-            bridge.transform.localRotation =
-                Quaternion.Euler(0f, 0f, angle - 90f);
-            bridge.transform.localScale = new Vector3(
-                0.58f,
-                Mathf.Abs(destinationRadius - sourceRadius) + 0.78f,
-                0.22f);
-            bridge.GetComponent<Renderer>().sharedMaterial =
-                model.IsGateImmediatelyAvailable(gate.Id)
-                    ? _gateReadyMaterial
-                    : _gateMaterial;
-
-            Collider collider = bridge.GetComponent<Collider>();
-            if (collider != null)
-            {
-                Destroy(collider);
-            }
-
-            CreateGateArrow(point, angle);
-        }
-
-        private void CreateGateArrow(Vector2 point, float angle)
-        {
-            GameObject arrow = new GameObject("Outward Arrow");
-            arrow.transform.SetParent(_contentRoot, false);
-            arrow.transform.localPosition =
-                new Vector3(point.x, point.y, -0.43f);
-            arrow.transform.localRotation =
-                Quaternion.Euler(0f, 0f, angle - 90f);
-
-            MeshFilter filter = arrow.AddComponent<MeshFilter>();
-            MeshRenderer renderer = arrow.AddComponent<MeshRenderer>();
-            Mesh mesh = new Mesh
-            {
-                name = "Gate Arrow"
-            };
-            mesh.vertices = new[]
-            {
-                new Vector3(-0.18f, -0.12f, 0f),
-                new Vector3(0.18f, -0.12f, 0f),
-                new Vector3(0f, 0.22f, 0f)
-            };
-            mesh.triangles = new[] { 0, 2, 1 };
-            mesh.RecalculateBounds();
-            filter.sharedMesh = mesh;
-            renderer.sharedMaterial = _arrowMaterial;
-            _generatedAssets.Add(mesh);
+            GameObject geometry = CreateBlenderModel(
+                _portalModel,
+                gate.Id,
+                _contentRoot,
+                point,
+                angle - 90f);
+            AssignPortalMaterials(geometry);
         }
 
         private void CreateExit(BoardModel model, ExitState exit)
@@ -393,126 +375,110 @@ namespace OrbitSort.Presentation
             float radius = _ringRadii[exit.Ring] + 1.20f;
             Vector2 point = PointOnCircle(radius, angle);
 
-            Material colorMaterial = _marbleMaterials[exit.Color];
-            CreateCylinder(
-                $"{MarbleColorUtility.DisplayName(exit.Color)} Exit",
+            GameObject geometry = CreateBlenderModel(
+                _receiverModel,
+                $"{MarbleColorUtility.DisplayName(exit.Color)} Receiver",
+                _contentRoot,
                 point,
-                0.78f,
-                -0.10f,
-                colorMaterial);
-            CreateCylinder(
-                "Exit Interior",
-                point,
-                0.50f,
-                -0.28f,
-                _exitInteriorMaterial);
+                angle);
+            AssignReceiverMaterials(geometry, exit.Color);
         }
 
-        private void CreateCenter(float innerRadius)
+        private void CreateCenter()
         {
-            CreateCylinder(
+            GameObject geometry = CreateBlenderModel(
+                _centerModel,
                 "Center Hub",
+                _contentRoot,
                 Vector2.zero,
-                Mathf.Max(0.70f, innerRadius - TrackHalfWidth - 0.28f),
-                0.28f,
-                _centerMaterial);
+                0f);
+            AssignAllRenderers(geometry, _centerMaterial);
         }
 
-        private void CreateCylinder(
-            string objectName,
+        private GameObject CreateBlenderModel(
+            GameObject model,
+            string instanceName,
+            Transform parent,
             Vector2 point,
-            float radius,
-            float depth,
-            Material material)
+            float angleDegrees)
         {
-            GameObject cylinder = GameObject.CreatePrimitive(
-                PrimitiveType.Cylinder);
-            cylinder.name = objectName;
-            cylinder.transform.SetParent(_contentRoot, false);
-            cylinder.transform.localPosition =
-                new Vector3(point.x, point.y, depth);
-            cylinder.transform.localRotation =
-                Quaternion.Euler(90f, 0f, 0f);
-            cylinder.transform.localScale =
-                new Vector3(radius, 0.10f, radius);
-            cylinder.GetComponent<Renderer>().sharedMaterial = material;
+            GameObject placement = new GameObject(instanceName);
+            placement.transform.SetParent(parent, false);
+            placement.transform.localPosition =
+                new Vector3(point.x, point.y, 0f);
+            placement.transform.localRotation =
+                Quaternion.Euler(0f, 0f, angleDegrees);
 
-            Collider collider = cylinder.GetComponent<Collider>();
-            if (collider != null)
+            GameObject coordinateSpace =
+                new GameObject("Blender Coordinate Space");
+            coordinateSpace.transform.SetParent(placement.transform, false);
+            coordinateSpace.transform.localRotation = BlenderBoardRotation;
+
+            GameObject geometry = Instantiate(
+                model,
+                coordinateSpace.transform,
+                false);
+            geometry.name = "Imported Blender Mesh";
+
+            foreach (Collider collider in
+                     geometry.GetComponentsInChildren<Collider>(true))
             {
                 Destroy(collider);
             }
+
+            return geometry;
         }
 
-        private void CreateAnnulusObject(
-            string objectName,
-            float innerRadius,
-            float outerRadius,
-            float depth,
-            Material material,
-            Transform parent)
+        private void AssignRingMaterials(GameObject geometry)
         {
-            GameObject ring = new GameObject(objectName);
-            ring.transform.SetParent(parent, false);
-            ring.transform.localPosition = new Vector3(0f, 0f, depth);
-
-            MeshFilter filter = ring.AddComponent<MeshFilter>();
-            MeshRenderer renderer = ring.AddComponent<MeshRenderer>();
-            Mesh mesh = CreateAnnulusMesh(
-                objectName,
-                innerRadius,
-                outerRadius);
-            filter.sharedMesh = mesh;
-            renderer.sharedMaterial = material;
-            _generatedAssets.Add(mesh);
+            foreach (Renderer renderer in
+                     geometry.GetComponentsInChildren<Renderer>(true))
+            {
+                renderer.sharedMaterial =
+                    renderer.gameObject.name.Contains("Trough")
+                        ? _trackMaterial
+                        : _railMaterial;
+            }
         }
 
-        private static Mesh CreateAnnulusMesh(
-            string meshName,
-            float innerRadius,
-            float outerRadius)
+        private void AssignPortalMaterials(GameObject geometry)
         {
-            Vector3[] vertices = new Vector3[(CircleSegments + 1) * 2];
-            Vector2[] uv = new Vector2[vertices.Length];
-            int[] triangles = new int[CircleSegments * 6];
-
-            for (int index = 0; index <= CircleSegments; index++)
+            foreach (Renderer renderer in
+                     geometry.GetComponentsInChildren<Renderer>(true))
             {
-                float radians =
-                    index / (float)CircleSegments * Mathf.PI * 2f;
-                float cosine = Mathf.Cos(radians);
-                float sine = Mathf.Sin(radians);
-                vertices[index * 2] =
-                    new Vector3(cosine * innerRadius, sine * innerRadius, 0f);
-                vertices[index * 2 + 1] =
-                    new Vector3(cosine * outerRadius, sine * outerRadius, 0f);
-                uv[index * 2] = new Vector2(0f, index / (float)CircleSegments);
-                uv[index * 2 + 1] =
-                    new Vector2(1f, index / (float)CircleSegments);
+                string rendererName = renderer.gameObject.name;
+                renderer.sharedMaterial =
+                    rendererName.Contains("Arrow")
+                        ? _arrowMaterial
+                        : rendererName.Contains("Passage")
+                            ? _exitInteriorMaterial
+                            : _portalMaterial;
             }
+        }
 
-            for (int index = 0; index < CircleSegments; index++)
+        private void AssignReceiverMaterials(
+            GameObject geometry,
+            MarbleColor color)
+        {
+            foreach (Renderer renderer in
+                     geometry.GetComponentsInChildren<Renderer>(true))
             {
-                int vertex = index * 2;
-                int triangle = index * 6;
-                triangles[triangle] = vertex;
-                triangles[triangle + 1] = vertex + 2;
-                triangles[triangle + 2] = vertex + 1;
-                triangles[triangle + 3] = vertex + 1;
-                triangles[triangle + 4] = vertex + 2;
-                triangles[triangle + 5] = vertex + 3;
+                renderer.sharedMaterial =
+                    renderer.gameObject.name.Contains("Opening")
+                        ? _exitInteriorMaterial
+                        : _receiverMaterials[color];
             }
+        }
 
-            Mesh mesh = new Mesh
+        private static void AssignAllRenderers(
+            GameObject geometry,
+            Material material)
+        {
+            foreach (Renderer renderer in
+                     geometry.GetComponentsInChildren<Renderer>(true))
             {
-                name = meshName,
-                vertices = vertices,
-                triangles = triangles,
-                uv = uv
-            };
-            mesh.RecalculateNormals();
-            mesh.RecalculateBounds();
-            return mesh;
+                renderer.sharedMaterial = material;
+            }
         }
 
         private IEnumerator AnimateRingRotation(
@@ -574,7 +540,24 @@ namespace OrbitSort.Presentation
                 Quaternion.Euler(0f, 0f, angleDegrees);
         }
 
-        private Material CreateMaterial(string materialName, Color color)
+        private static GameObject LoadModel(string modelName)
+        {
+            GameObject model = Resources.Load<GameObject>(
+                ModelResourceRoot + modelName);
+            if (model == null)
+            {
+                throw new InvalidOperationException(
+                    $"Blender board model '{modelName}' could not be loaded.");
+            }
+
+            return model;
+        }
+
+        private Material CreateMaterial(
+            string materialName,
+            Color color,
+            float metallic,
+            float smoothness)
         {
             Shader shader = Resources.Load<Shader>(
                 "Shaders/PrototypeSurface");
@@ -594,25 +577,11 @@ namespace OrbitSort.Presentation
                 name = materialName,
                 color = color
             };
+            material.SetFloat("_Metallic", metallic);
+            material.SetFloat("_Smoothness", smoothness);
 
             _generatedAssets.Add(material);
             return material;
-        }
-
-        private static float[] CalculateRadii(int ringCount)
-        {
-            if (ringCount == 2)
-            {
-                return new[] { 2.45f, 4.25f };
-            }
-
-            float[] radii = new float[ringCount];
-            for (int index = 0; index < ringCount; index++)
-            {
-                radii[index] = 1.80f + index * 1.48f;
-            }
-
-            return radii;
         }
 
         private static Vector2 PointOnCircle(
@@ -647,16 +616,6 @@ namespace OrbitSort.Presentation
                 _contentRoot = null;
             }
 
-            for (int index = _generatedAssets.Count - 1; index >= 0; index--)
-            {
-                UnityEngine.Object asset = _generatedAssets[index];
-                if (asset is Mesh)
-                {
-                    Destroy(asset);
-                }
-            }
-
-            _generatedAssets.RemoveAll(asset => asset is Mesh);
         }
 
         private void OnDestroy()

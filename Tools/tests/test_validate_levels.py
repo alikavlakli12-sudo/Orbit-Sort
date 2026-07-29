@@ -66,6 +66,41 @@ class LevelCatalogValidationTests(unittest.TestCase):
             errors,
         )
 
+    def test_every_level_requires_three_rings(self) -> None:
+        catalog = copy.deepcopy(self.valid_catalog)
+        level = catalog["levels"][0]
+        level["rings"].pop(1)
+        level["gates"].pop(0)
+
+        errors, _ = validate_levels.validate_catalog(catalog)
+
+        self.assertTrue(
+            any("expected exactly 3 rings" in error for error in errors),
+            errors,
+        )
+
+    def test_every_level_requires_two_portals(self) -> None:
+        catalog = copy.deepcopy(self.valid_catalog)
+        catalog["levels"][0]["gates"].pop()
+
+        errors, _ = validate_levels.validate_catalog(catalog)
+
+        self.assertTrue(
+            any("expected exactly 2 gates" in error for error in errors),
+            errors,
+        )
+
+    def test_ring_ids_must_match_physical_order(self) -> None:
+        catalog = copy.deepcopy(self.valid_catalog)
+        catalog["levels"][0]["rings"][1]["id"] = "second"
+
+        errors, _ = validate_levels.validate_catalog(catalog)
+
+        self.assertTrue(
+            any("expected 'middle'" in error for error in errors),
+            errors,
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

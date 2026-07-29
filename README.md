@@ -4,7 +4,7 @@ Orbit Sort is a portrait mobile puzzle prototype built around continuous concent
 
 The tracks look continuous and have no visible sockets. Underneath the presentation, the gameplay model uses hidden logical positions so movement, undo, level validation, solvability, and deadlock detection remain deterministic.
 
-![Orbit Sort continuous-track concept](ConceptArt/OrbitSort_GameplayPreview_ContinuousTracks.png)
+![Orbit Sort top-down Blender asset integration](Docs/Previews/orbit_sort_unity_topdown_static.png)
 
 ## Prototype rules
 
@@ -19,28 +19,34 @@ The tracks look continuous and have no visible sockets. Underneath the presentat
 
 ## Current status
 
-Playable greybox:
+Playable prototype:
 
 - Unity project pinned to `6000.4.0f1`.
 - Two JSON-authored prototype levels.
-- Continuous concentric tracks with no visible marble sockets.
+- Three Blender-authored concentric ring assets with visible gaps between them.
+- Exactly two rounded, arrow-marked transfer portals.
+- Three short color receiver tubes around the outer ring.
+- Perpendicular orthographic top-down gameplay camera.
 - Swipe ring rotation and tap-to-transfer gates.
 - Automatic matching exits, win state, restart, and undo.
 - Search-aware deadlock detection with a visible lose screen.
-- Amber last-gap and red full-ring warnings.
 - Local, Unity, and continuous-integration validation.
 
-The greybox uses generated geometry and placeholder materials. Art,
-animation, audio, haptics, and the remaining three to eight levels follow
-after the core loop is approved.
+The approved geometry is exported from Blender and imported into Unity;
+Unity does not procedurally rebuild it. Animation polish, audio, haptics,
+and the remaining three to eight levels follow after this visual
+milestone is approved.
 
 ## Requirements
 
 - Unity `6000.4.0f1`
 - Python 3.11 or newer for repository validation
+- Blender `5.1.1` for regenerating board model exports
 - Git
 
-Git LFS is intentionally not enabled yet because it is not installed on every contributor machine. Enable it before committing large source files such as PSD, Blender, FBX, WAV, or video assets.
+The prototype's Blender and FBX files are kept below 1 MB each and are
+tracked directly. Enable Git LFS before adding materially larger source
+art, audio, or video files.
 
 ## Getting started
 
@@ -60,7 +66,7 @@ Git LFS is intentionally not enabled yet because it is not installed on every co
 Open `Assets/OrbitSort/Scenes/Prototype.unity` and press Play.
 
 - Swipe directly around a ring to rotate it.
-- Tap a green gate to move an aligned marble outward.
+- Tap an arrow-marked gold portal to move an aligned marble outward.
 - `Undo` reverses the last completed action.
 - `Retry` restores the current level.
 - The level arrows switch between the two prototype boards.
@@ -85,6 +91,7 @@ Branch names must describe the work. Personal names, agent names, and tool names
 
 ```text
 Assets/OrbitSort/           Unity-owned game assets and code
+ArtSource/                  Authoritative Blender source
 ConceptArt/                 Current visual direction
 Docs/                       Game rules, architecture, and level format
 Packages/                   Unity Package Manager dependencies
@@ -103,6 +110,24 @@ Assets/OrbitSort/Resources/Levels/levels.json
 ```
 
 The format is versioned and documented in [Docs/LevelFormat.md](Docs/LevelFormat.md). Level changes must pass the validator before merge.
+
+## Board art pipeline
+
+`ArtSource/OrbitSortBoardAssets.blend` is the authoritative production
+source. Regenerate the Unity FBX models with:
+
+```bash
+/Applications/Blender.app/Contents/MacOS/Blender \
+  --background \
+  --python Docs/Tools/export_board_assets.py
+```
+
+The exporter preserves centered ring pivots and reusable portal, receiver,
+hub, and marble meshes. Imported board models are validated by the Unity
+Edit Mode test suite. The `Orbit Sort/Render Static Board Preview` editor
+command regenerates the top-down visual reference without entering Play
+Mode. Pass `--rebuild` to the Blender export command only when intentionally
+regenerating the checked-in source from the scripted geometry definition.
 
 ## License
 

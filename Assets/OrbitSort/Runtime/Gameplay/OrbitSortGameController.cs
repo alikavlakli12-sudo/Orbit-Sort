@@ -73,7 +73,7 @@ namespace OrbitSort.Gameplay
             }
 
             _camera.orthographic = true;
-            _camera.transform.position = new Vector3(0f, 0.15f, -20f);
+            _camera.transform.position = new Vector3(0f, 0f, -20f);
             _camera.transform.rotation = Quaternion.identity;
             _camera.clearFlags = CameraClearFlags.SolidColor;
             _camera.backgroundColor = new Color(0.055f, 0.035f, 0.14f);

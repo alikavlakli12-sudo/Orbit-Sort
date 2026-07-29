@@ -96,15 +96,25 @@
     {
       "id": "level_002",
       "displayName": "Jam Lesson",
-      "designerNotes": "Tap the gate immediately to create a deliberate deadlock. Rotate the outer ring first to make safe space.",
+      "designerNotes": "All prototype boards use three physical rings and two outward portals. Clear space on the outer ring before feeding it.",
       "rings": [
         {
           "id": "inner",
           "capacity": 4,
           "rotationOffset": 0,
           "marbles": [
-            { "index": 0, "color": "yellow" },
-            { "index": 1, "color": "blue" }
+            { "index": 1, "color": "blue" },
+            { "index": 2, "color": "yellow" }
+          ]
+        },
+        {
+          "id": "middle",
+          "capacity": 4,
+          "rotationOffset": 0,
+          "marbles": [
+            { "index": 0, "color": "red" },
+            { "index": 1, "color": "yellow" },
+            { "index": 2, "color": "blue" }
           ]
         },
         {
@@ -114,17 +124,25 @@
           "marbles": [
             { "index": 0, "color": "red" },
             { "index": 1, "color": "yellow" },
-            { "index": 2, "color": "blue" }
+            { "index": 3, "color": "blue" }
           ]
         }
       ],
       "gates": [
         {
-          "id": "gate_inner_outer",
+          "id": "gate_inner_middle",
           "fromRing": "inner",
-          "toRing": "outer",
+          "toRing": "middle",
           "fromIndex": 0,
           "toIndex": 3,
+          "direction": "outward"
+        },
+        {
+          "id": "gate_middle_outer",
+          "fromRing": "middle",
+          "toRing": "outer",
+          "fromIndex": 2,
+          "toIndex": 2,
           "direction": "outward"
         }
       ],

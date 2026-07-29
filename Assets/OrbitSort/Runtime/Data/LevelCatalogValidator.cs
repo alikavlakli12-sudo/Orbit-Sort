@@ -6,6 +6,13 @@ namespace OrbitSort.Data
 {
     public static class LevelCatalogValidator
     {
+        private static readonly string[] ExpectedRingIds =
+        {
+            "inner",
+            "middle",
+            "outer"
+        };
+
         private static readonly HashSet<string> SupportedColors =
             new HashSet<string>(
                 new[] { "blue", "red", "yellow" },
@@ -110,9 +117,9 @@ namespace OrbitSort.Data
             List<string> errors)
         {
             RingData[] rings = level.rings ?? Array.Empty<RingData>();
-            if (rings.Length < 2 || rings.Length > 3)
+            if (rings.Length != 3)
             {
-                errors.Add($"{context} must contain two or three rings.");
+                errors.Add($"{context} must contain exactly three rings.");
                 return;
             }
 
@@ -136,6 +143,16 @@ namespace OrbitSort.Data
                 {
                     errors.Add($"{ringContext} duplicates ring ID '{ring.id}'.");
                     continue;
+                }
+
+                if (!string.Equals(
+                        ring.id,
+                        ExpectedRingIds[ringIndex],
+                        StringComparison.OrdinalIgnoreCase))
+                {
+                    errors.Add(
+                        $"{ringContext}.id must be "
+                        + $"'{ExpectedRingIds[ringIndex]}'.");
                 }
 
                 if (ring.capacity < 4 || ring.capacity > 32)
@@ -219,14 +236,16 @@ namespace OrbitSort.Data
             List<string> errors)
         {
             GateData[] gates = level.gates ?? Array.Empty<GateData>();
-            if (gates.Length == 0)
+            if (gates.Length != rings.Length - 1)
             {
-                errors.Add($"{context} needs at least one gate.");
+                errors.Add(
+                    $"{context} needs exactly two outward gates.");
                 return;
             }
 
             HashSet<string> ids =
                 new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            bool[] connectedPairs = new bool[rings.Length - 1];
             for (int index = 0; index < gates.Length; index++)
             {
                 GateData gate = gates[index];
@@ -256,6 +275,15 @@ namespace OrbitSort.Data
                     errors.Add(
                         $"{gateContext} must connect adjacent rings outward.");
                 }
+                else if (connectedPairs[fromOrder])
+                {
+                    errors.Add(
+                        $"{gateContext} duplicates an adjacent ring portal.");
+                }
+                else
+                {
+                    connectedPairs[fromOrder] = true;
+                }
 
                 if (gate.fromIndex < 0 || gate.fromIndex >= from.capacity
                     || gate.toIndex < 0 || gate.toIndex >= to.capacity)
@@ -269,6 +297,16 @@ namespace OrbitSort.Data
                         StringComparison.OrdinalIgnoreCase))
                 {
                     errors.Add($"{gateContext} must point outward.");
+                }
+            }
+
+            for (int index = 0; index < connectedPairs.Length; index++)
+            {
+                if (!connectedPairs[index])
+                {
+                    errors.Add(
+                        $"{context} is missing the portal from "
+                        + $"rings[{index}] to rings[{index + 1}].");
                 }
             }
         }

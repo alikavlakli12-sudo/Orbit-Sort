@@ -35,7 +35,8 @@ Increase it when a change would make an existing loader interpret data incorrect
 
 ## Rings
 
-Rings are listed from innermost to outermost.
+Every level contains exactly three rings, listed from innermost to
+outermost: `inner`, `middle`, and `outer`.
 
 ```json
 {
@@ -55,7 +56,9 @@ Rings are listed from innermost to outermost.
 
 ## Gates
 
-Prototype gates are one-way and connect adjacent rings.
+Every level contains exactly two one-way portals. One connects the inner
+ring to the middle ring, and one connects the middle ring to the outer
+ring.
 
 ```json
 {
@@ -98,11 +101,11 @@ The validator checks:
 - Catalog and schema versions
 - Prototype rule flags
 - Stable and unique IDs
-- Ring count and ordering
+- Exactly three rings in inner-to-outer order
 - Capacity and index ranges
 - Duplicate marble positions
 - Supported colors
-- Adjacent one-way gates
+- Exactly two adjacent one-way portals
 - Outermost-ring exits
 - Exit coverage for every marble color
 - An initial empty gap on every ring

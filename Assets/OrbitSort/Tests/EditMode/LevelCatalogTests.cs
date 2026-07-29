@@ -22,18 +22,30 @@ namespace OrbitSort.Tests.EditMode
     ""rings"": [
       {""id"": ""inner"", ""capacity"": 4, ""rotationOffset"": 0,
        ""marbles"": [{""index"": 1, ""color"": ""blue""}]},
+      {""id"": ""middle"", ""capacity"": 4, ""rotationOffset"": 0,
+       ""marbles"": [{""index"": 2, ""color"": ""yellow""}]},
       {""id"": ""outer"", ""capacity"": 4, ""rotationOffset"": 0,
        ""marbles"": [{""index"": 2, ""color"": ""red""}]}
     ],
-    ""gates"": [{
-      ""id"": ""gate"", ""fromRing"": ""inner"", ""toRing"": ""outer"",
-      ""fromIndex"": 0, ""toIndex"": 0, ""direction"": ""outward""
-    }],
+    ""gates"": [
+      {
+        ""id"": ""gate_inner_middle"", ""fromRing"": ""inner"",
+        ""toRing"": ""middle"", ""fromIndex"": 0, ""toIndex"": 0,
+        ""direction"": ""outward""
+      },
+      {
+        ""id"": ""gate_middle_outer"", ""fromRing"": ""middle"",
+        ""toRing"": ""outer"", ""fromIndex"": 2, ""toIndex"": 2,
+        ""direction"": ""outward""
+      }
+    ],
     ""exits"": [
       {""id"": ""blue"", ""ring"": ""outer"", ""ringIndex"": 0,
        ""color"": ""blue""},
       {""id"": ""red"", ""ring"": ""outer"", ""ringIndex"": 1,
-       ""color"": ""red""}
+       ""color"": ""red""},
+      {""id"": ""yellow"", ""ring"": ""outer"", ""ringIndex"": 3,
+       ""color"": ""yellow""}
     ]
   }]
 }";

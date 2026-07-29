@@ -56,7 +56,14 @@ Assets/OrbitSort/Runtime/Gameplay/
 
 ### Presentation
 
-The view renders smooth, unsegmented ring channels. Hidden logical positions are converted into angles, then marbles interpolate along the track.
+The approved board geometry is authored in Blender and exported as
+separate FBX models for the three rings, portal, receiver, center hub, and
+marble. Unity imports and positions these meshes; it does not recreate
+their geometry.
+
+The view uses a perpendicular orthographic camera and renders smooth,
+unsegmented ring channels. Hidden logical positions are converted into
+angles, then marbles rotate with their ring pivot.
 
 The view never mutates gameplay state directly.
 
