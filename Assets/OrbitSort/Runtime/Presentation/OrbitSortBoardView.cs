@@ -12,6 +12,7 @@ namespace OrbitSort.Presentation
         private const float TrackHalfWidth = 0.48f;
         private const float MinimumSnapDuration = 0.10f;
         private const float MaximumSnapDuration = 0.24f;
+        private const float DragFollowSharpness = 52f;
         private const string ModelResourceRoot = "Models/";
         private const float ReceiverRadius = 5.67f;
 
@@ -32,9 +33,19 @@ namespace OrbitSort.Presentation
         private readonly Dictionary<string, Transform> _ringRoots =
             new Dictionary<string, Transform>(
                 StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<
+                string,
+                Dictionary<int, MarbleVisual>>
+            _marbleVisuals =
+                new Dictionary<
+                    string,
+                    Dictionary<int, MarbleVisual>>(
+                    StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<string, Vector2> _gatePositions =
             new Dictionary<string, Vector2>(
                 StringComparer.OrdinalIgnoreCase);
+        private readonly List<int> _marbleRemovalBuffer =
+            new List<int>();
         private readonly List<UnityEngine.Object> _generatedAssets =
             new List<UnityEngine.Object>();
         private readonly Dictionary<MarbleColor, Material> _marbleMaterials =
@@ -60,7 +71,8 @@ namespace OrbitSort.Presentation
         private Coroutine _ringAnimation;
         private string _previewRingId;
         private float _previewBaseAngle;
-        private float _previewAngle;
+        private float _previewTargetAngle;
+        private float _previewVisualAngle;
 
         public void Initialize()
         {
@@ -157,6 +169,7 @@ namespace OrbitSort.Presentation
             ClearContent();
             _ringRadii.Clear();
             _ringRoots.Clear();
+            _marbleVisuals.Clear();
             _gatePositions.Clear();
 
             GameObject content = new GameObject("Board Content");
@@ -191,6 +204,24 @@ namespace OrbitSort.Presentation
             foreach (ExitState exit in model.Exits)
             {
                 CreateExit(model, exit);
+            }
+        }
+
+        public void SynchronizeModel(BoardModel model)
+        {
+            if (!CanSynchronize(model))
+            {
+                Render(model);
+                return;
+            }
+
+            foreach (RingState ring in model.Rings)
+            {
+                Transform ringRoot = _ringRoots[ring.Id];
+                SetLocalAngle(
+                    ringRoot,
+                    -ring.RotationOffset * (360f / ring.Capacity));
+                SynchronizeMarbles(ring, ringRoot);
             }
         }
 
@@ -251,7 +282,8 @@ namespace OrbitSort.Presentation
 
             _previewRingId = ringId;
             _previewBaseAngle = SignedLocalAngle(ringRoot);
-            _previewAngle = _previewBaseAngle;
+            _previewTargetAngle = _previewBaseAngle;
+            _previewVisualAngle = _previewBaseAngle;
             return true;
         }
 
@@ -268,8 +300,7 @@ namespace OrbitSort.Presentation
                 return;
             }
 
-            _previewAngle = _previewBaseAngle + dragAngleDegrees;
-            SetLocalAngle(ringRoot, _previewAngle);
+            _previewTargetAngle = _previewBaseAngle + dragAngleDegrees;
         }
 
         public void AnimateRingToModel(
@@ -288,7 +319,7 @@ namespace OrbitSort.Presentation
                 _previewRingId,
                 ringId,
                 StringComparison.OrdinalIgnoreCase)
-                ? _previewAngle
+                ? _previewVisualAngle
                 : SignedLocalAngle(ringRoot);
             StopRingAnimation();
 
@@ -303,6 +334,14 @@ namespace OrbitSort.Presentation
                 MinimumSnapDuration,
                 MaximumSnapDuration,
                 Mathf.Clamp01(snapDistance / stepAngle));
+
+            if (snapDistance <= 0.01f)
+            {
+                SetLocalAngle(ringRoot, targetAngle);
+                SynchronizeModel(model);
+                onComplete?.Invoke();
+                return;
+            }
 
             _ringAnimation = StartCoroutine(
                 AnimateRingRotation(
@@ -341,21 +380,95 @@ namespace OrbitSort.Presentation
             float radius,
             Transform ringRoot)
         {
+            var visuals = new Dictionary<int, MarbleVisual>();
+            _marbleVisuals[ring.Id] = visuals;
+
             foreach (KeyValuePair<int, MarbleColor> marble in ring.Marbles)
             {
-                Vector2 point = PointOnCircle(
-                    radius,
+                visuals.Add(
                     marble.Key,
-                    ring.Capacity);
+                    CreateMarbleVisual(
+                        ring,
+                        radius,
+                        ringRoot,
+                        marble.Key,
+                        marble.Value));
+            }
+        }
 
-                GameObject geometry = CreateBlenderModel(
-                    _marbleModel,
-                    $"{MarbleColorUtility.DisplayName(marble.Value)} Marble",
-                    ringRoot,
-                    point,
-                    0f);
+        private MarbleVisual CreateMarbleVisual(
+            RingState ring,
+            float radius,
+            Transform ringRoot,
+            int localIndex,
+            MarbleColor color)
+        {
+            Vector2 point = PointOnCircle(
+                radius,
+                localIndex,
+                ring.Capacity);
+            GameObject placement = CreateBlenderModel(
+                _marbleModel,
+                $"{MarbleColorUtility.DisplayName(color)} Marble",
+                ringRoot,
+                point,
+                0f);
+            AssignAllRenderers(
+                placement,
+                _marbleMaterials[color]);
+            return new MarbleVisual(placement, color);
+        }
+
+        private void SynchronizeMarbles(
+            RingState ring,
+            Transform ringRoot)
+        {
+            Dictionary<int, MarbleVisual> visuals =
+                _marbleVisuals[ring.Id];
+            _marbleRemovalBuffer.Clear();
+
+            foreach (KeyValuePair<int, MarbleVisual> visual in visuals)
+            {
+                if (!ring.Marbles.ContainsKey(visual.Key))
+                {
+                    _marbleRemovalBuffer.Add(visual.Key);
+                }
+            }
+
+            foreach (int localIndex in _marbleRemovalBuffer)
+            {
+                ReleaseObject(visuals[localIndex].Placement);
+                visuals.Remove(localIndex);
+            }
+
+            float radius = _ringRadii[ring.Id];
+            foreach (KeyValuePair<int, MarbleColor> marble in ring.Marbles)
+            {
+                if (!visuals.TryGetValue(
+                        marble.Key,
+                        out MarbleVisual visual))
+                {
+                    visuals.Add(
+                        marble.Key,
+                        CreateMarbleVisual(
+                            ring,
+                            radius,
+                            ringRoot,
+                            marble.Key,
+                            marble.Value));
+                    continue;
+                }
+
+                if (visual.Color == marble.Value)
+                {
+                    continue;
+                }
+
+                visual.Color = marble.Value;
+                visual.Placement.name =
+                    $"{MarbleColorUtility.DisplayName(marble.Value)} Marble";
                 AssignAllRenderers(
-                    geometry,
+                    visual.Placement,
                     _marbleMaterials[marble.Value]);
             }
         }
@@ -455,7 +568,7 @@ namespace OrbitSort.Presentation
                 Destroy(collider);
             }
 
-            return geometry;
+            return placement;
         }
 
         private void AssignRingMaterials(GameObject geometry)
@@ -534,7 +647,10 @@ namespace OrbitSort.Presentation
                 elapsed += Time.unscaledDeltaTime;
                 float progress = Mathf.Clamp01(elapsed / duration);
                 float easedProgress =
-                    1f - Mathf.Pow(1f - progress, 3f);
+                    progress
+                    * progress
+                    * progress
+                    * (progress * (progress * 6f - 15f) + 10f);
                 SetLocalAngle(
                     ringRoot,
                     Mathf.LerpUnclamped(
@@ -551,8 +667,36 @@ namespace OrbitSort.Presentation
 
             _ringAnimation = null;
             _previewRingId = null;
-            Render(model);
+            SynchronizeModel(model);
             onComplete?.Invoke();
+        }
+
+        private void LateUpdate()
+        {
+            if (_ringAnimation != null
+                || _previewRingId == null
+                || !_ringRoots.TryGetValue(
+                    _previewRingId,
+                    out Transform ringRoot))
+            {
+                return;
+            }
+
+            float deltaTime = Mathf.Min(Time.unscaledDeltaTime, 0.05f);
+            float follow =
+                1f - Mathf.Exp(-DragFollowSharpness * deltaTime);
+            _previewVisualAngle = Mathf.Lerp(
+                _previewVisualAngle,
+                _previewTargetAngle,
+                follow);
+
+            if (Mathf.Abs(
+                    _previewTargetAngle - _previewVisualAngle) < 0.01f)
+            {
+                _previewVisualAngle = _previewTargetAngle;
+            }
+
+            SetLocalAngle(ringRoot, _previewVisualAngle);
         }
 
         private void StopRingAnimation()
@@ -614,7 +758,8 @@ namespace OrbitSort.Presentation
             Material material = new Material(shader)
             {
                 name = materialName,
-                color = color
+                color = color,
+                enableInstancing = true
             };
             material.SetFloat("_Metallic", metallic);
             material.SetFloat("_Smoothness", smoothness);
@@ -646,15 +791,36 @@ namespace OrbitSort.Presentation
             return 90f - index * (360f / capacity);
         }
 
+        private bool CanSynchronize(BoardModel model)
+        {
+            if (_contentRoot == null
+                || model.Rings.Count != _ringRoots.Count
+                || model.Rings.Count != _marbleVisuals.Count)
+            {
+                return false;
+            }
+
+            foreach (RingState ring in model.Rings)
+            {
+                if (!_ringRoots.ContainsKey(ring.Id)
+                    || !_marbleVisuals.ContainsKey(ring.Id))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
         private void ClearContent()
         {
             _previewRingId = null;
             if (_contentRoot != null)
             {
-                Destroy(_contentRoot.gameObject);
+                _contentRoot.gameObject.SetActive(false);
+                ReleaseObject(_contentRoot.gameObject);
                 _contentRoot = null;
             }
-
         }
 
         private void OnDestroy()
@@ -664,11 +830,37 @@ namespace OrbitSort.Presentation
             {
                 if (asset != null)
                 {
-                    Destroy(asset);
+                    ReleaseObject(asset);
                 }
             }
 
             _generatedAssets.Clear();
+        }
+
+        private static void ReleaseObject(UnityEngine.Object target)
+        {
+            if (Application.isPlaying)
+            {
+                Destroy(target);
+            }
+            else
+            {
+                DestroyImmediate(target);
+            }
+        }
+
+        private sealed class MarbleVisual
+        {
+            public MarbleVisual(
+                GameObject placement,
+                MarbleColor color)
+            {
+                Placement = placement;
+                Color = color;
+            }
+
+            public GameObject Placement { get; }
+            public MarbleColor Color { get; set; }
         }
     }
 }

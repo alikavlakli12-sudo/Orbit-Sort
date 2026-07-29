@@ -11,6 +11,7 @@ namespace OrbitSort.Gameplay
         private const float TapThresholdPixels = 26f;
         private const float DragThresholdPixels = 32f;
         private const float MinimumRotationAngleDegrees = 3f;
+        private const float MinimumPointerRadiusSqr = 0.25f;
 
         private LevelCatalogData _catalog;
         private BoardModel _model;
@@ -22,12 +23,14 @@ namespace OrbitSort.Gameplay
         private bool _pointerBlockedByHud;
         private Vector2 _pointerStartScreen;
         private Vector2 _pointerStartWorld;
-        private Vector2 _pointerLastWorld;
+        private float _pointerLastAngleDegrees;
+        private bool _hasPointerAngle;
         private float _dragAngleDegrees;
-        private float _maximumDragDistancePixels;
+        private float _maximumDragDistanceSqr;
         private bool _isAnimatingRing;
         private string _selectedRingId;
         private string _selectedGateId;
+        private float _lastCameraAspect = -1f;
 
         public BoardModel Model => _model;
         public int LevelIndex => _levelIndex;
@@ -35,8 +38,7 @@ namespace OrbitSort.Gameplay
         private void Awake()
         {
             OrbitSortGameController[] controllers =
-                FindObjectsByType<OrbitSortGameController>(
-                    FindObjectsSortMode.None);
+                FindObjectsByType<OrbitSortGameController>();
             if (controllers.Length > 1)
             {
                 Destroy(gameObject);
@@ -214,9 +216,17 @@ namespace OrbitSort.Gameplay
             _pointerDown = true;
             _pointerStartScreen = screenPosition;
             _pointerStartWorld = ScreenToBoardWorld(screenPosition);
-            _pointerLastWorld = _pointerStartWorld;
+            _hasPointerAngle =
+                _pointerStartWorld.sqrMagnitude > MinimumPointerRadiusSqr;
+            if (_hasPointerAngle)
+            {
+                _pointerLastAngleDegrees = Mathf.Atan2(
+                    _pointerStartWorld.y,
+                    _pointerStartWorld.x) * Mathf.Rad2Deg;
+            }
+
             _dragAngleDegrees = 0f;
-            _maximumDragDistancePixels = 0f;
+            _maximumDragDistanceSqr = 0f;
             _pointerBlockedByHud = _hud.IsPointerOverUi(screenPosition);
             _selectedRingId = null;
             _selectedGateId = null;
@@ -253,29 +263,32 @@ namespace OrbitSort.Gameplay
                 return;
             }
 
-            _maximumDragDistancePixels = Mathf.Max(
-                _maximumDragDistancePixels,
-                Vector2.Distance(_pointerStartScreen, screenPosition));
+            float dragDistanceSqr =
+                (screenPosition - _pointerStartScreen).sqrMagnitude;
+            _maximumDragDistanceSqr = Mathf.Max(
+                _maximumDragDistanceSqr,
+                dragDistanceSqr);
 
             Vector2 currentWorld = ScreenToBoardWorld(screenPosition);
-            if (_pointerLastWorld.sqrMagnitude > 0.25f
-                && currentWorld.sqrMagnitude > 0.25f)
+            if (currentWorld.sqrMagnitude > MinimumPointerRadiusSqr)
             {
-                float previousAngle = Mathf.Atan2(
-                    _pointerLastWorld.y,
-                    _pointerLastWorld.x) * Mathf.Rad2Deg;
                 float currentAngle = Mathf.Atan2(
                     currentWorld.y,
                     currentWorld.x) * Mathf.Rad2Deg;
-                _dragAngleDegrees += Mathf.DeltaAngle(
-                    previousAngle,
-                    currentAngle);
-                _boardView.PreviewRingRotation(
-                    _selectedRingId,
-                    _dragAngleDegrees);
-            }
 
-            _pointerLastWorld = currentWorld;
+                if (_hasPointerAngle)
+                {
+                    _dragAngleDegrees += Mathf.DeltaAngle(
+                        _pointerLastAngleDegrees,
+                        currentAngle);
+                    _boardView.PreviewRingRotation(
+                        _selectedRingId,
+                        _dragAngleDegrees);
+                }
+
+                _pointerLastAngleDegrees = currentAngle;
+                _hasPointerAngle = true;
+            }
         }
 
         private void EndPointer(Vector2 screenPosition)
@@ -295,12 +308,12 @@ namespace OrbitSort.Gameplay
             }
 
             _pointerDown = false;
-            float dragDistance =
-                Mathf.Max(
-                    _maximumDragDistancePixels,
-                    Vector2.Distance(_pointerStartScreen, screenPosition));
+            float dragDistanceSqr = Mathf.Max(
+                _maximumDragDistanceSqr,
+                (screenPosition - _pointerStartScreen).sqrMagnitude);
             if (_selectedGateId != null
-                && dragDistance <= TapThresholdPixels)
+                && dragDistanceSqr
+                    <= TapThresholdPixels * TapThresholdPixels)
             {
                 ApplyResult(_model.TryTransferGate(_selectedGateId));
                 ClearPointerState();
@@ -308,7 +321,8 @@ namespace OrbitSort.Gameplay
             }
 
             if (_selectedRingId != null
-                && dragDistance >= DragThresholdPixels
+                && dragDistanceSqr
+                    >= DragThresholdPixels * DragThresholdPixels
                 && Mathf.Abs(_dragAngleDegrees)
                     >= MinimumRotationAngleDegrees)
             {
@@ -348,7 +362,7 @@ namespace OrbitSort.Gameplay
                 return;
             }
 
-            _boardView.Render(_model);
+            _boardView.SynchronizeModel(_model);
             RefreshHud(result);
         }
 
@@ -432,7 +446,17 @@ namespace OrbitSort.Gameplay
             }
 
             float aspect = Mathf.Max(0.2f, _camera.aspect);
-            _camera.orthographicSize = Mathf.Max(7.2f, 6.5f / aspect);
+            if (Mathf.Abs(aspect - _lastCameraAspect) < 0.0001f)
+            {
+                return;
+            }
+
+            _lastCameraAspect = aspect;
+            float size = Mathf.Max(7.2f, 6.5f / aspect);
+            if (Mathf.Abs(_camera.orthographicSize - size) > 0.0001f)
+            {
+                _camera.orthographicSize = size;
+            }
         }
 
         private bool InputIsBusy =>
@@ -453,8 +477,9 @@ namespace OrbitSort.Gameplay
         {
             _pointerDown = false;
             _pointerBlockedByHud = false;
+            _hasPointerAngle = false;
             _dragAngleDegrees = 0f;
-            _maximumDragDistancePixels = 0f;
+            _maximumDragDistanceSqr = 0f;
             _selectedRingId = null;
             _selectedGateId = null;
         }

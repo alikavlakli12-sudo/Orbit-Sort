@@ -12,7 +12,7 @@ namespace OrbitSort.Tests.PlayMode
         public IEnumerator PrototypeBootsWithAPlayableJsonLevel()
         {
             OrbitSortGameController controller =
-                Object.FindFirstObjectByType<OrbitSortGameController>();
+                Object.FindAnyObjectByType<OrbitSortGameController>();
             if (controller == null)
             {
                 GameObject prototype =

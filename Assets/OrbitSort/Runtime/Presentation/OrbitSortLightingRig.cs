@@ -7,20 +7,34 @@ namespace OrbitSort.Presentation
     {
         public static void Configure(Camera camera, Transform parent)
         {
+            bool mobile = Application.isMobilePlatform;
             if (camera != null)
             {
-                camera.allowHDR = true;
+                camera.allowHDR = false;
                 camera.allowMSAA = true;
+                camera.allowDynamicResolution = false;
+                camera.depthTextureMode = DepthTextureMode.None;
+                camera.useOcclusionCulling = false;
             }
 
-            QualitySettings.pixelLightCount =
-                Mathf.Max(QualitySettings.pixelLightCount, 4);
-            QualitySettings.antiAliasing =
-                Mathf.Max(QualitySettings.antiAliasing, 4);
-            QualitySettings.shadows = ShadowQuality.All;
-            QualitySettings.shadowResolution = ShadowResolution.High;
-            QualitySettings.shadowDistance =
-                Mathf.Max(QualitySettings.shadowDistance, 30f);
+            if (Application.isPlaying)
+            {
+                QualitySettings.pixelLightCount = 2;
+                QualitySettings.antiAliasing = mobile ? 2 : 4;
+                QualitySettings.shadows = ShadowQuality.All;
+                QualitySettings.shadowResolution =
+                    mobile
+                        ? ShadowResolution.Medium
+                        : ShadowResolution.High;
+                QualitySettings.shadowDistance = 25f;
+                QualitySettings.shadowCascades = mobile ? 0 : 2;
+                QualitySettings.shadowProjection =
+                    ShadowProjection.StableFit;
+                QualitySettings.maxQueuedFrames = 1;
+                QualitySettings.vSyncCount = 0;
+                OnDemandRendering.renderFrameInterval = 1;
+                Application.targetFrameRate = 60;
+            }
 
             RenderSettings.ambientMode = AmbientMode.Trilight;
             RenderSettings.ambientSkyColor =
@@ -82,6 +96,7 @@ namespace OrbitSort.Presentation
             light.color = color;
             light.intensity = intensity;
             light.transform.rotation = Quaternion.Euler(eulerAngles);
+            light.renderMode = LightRenderMode.ForcePixel;
             light.shadows =
                 castShadows ? LightShadows.Soft : LightShadows.None;
             light.shadowStrength = 0.58f;
@@ -103,6 +118,7 @@ namespace OrbitSort.Presentation
             light.intensity = intensity;
             light.range = range;
             light.transform.localPosition = position;
+            light.renderMode = LightRenderMode.ForceVertex;
             light.shadows = LightShadows.None;
         }
 
@@ -123,7 +139,6 @@ namespace OrbitSort.Presentation
             }
 
             light.type = type;
-            light.renderMode = LightRenderMode.ForcePixel;
             return light;
         }
     }

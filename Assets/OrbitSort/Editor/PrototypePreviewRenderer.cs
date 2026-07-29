@@ -34,7 +34,7 @@ namespace OrbitSort.Editor
             camera.transform.rotation = Quaternion.identity;
             camera.clearFlags = CameraClearFlags.SolidColor;
             camera.backgroundColor = new Color(0.055f, 0.035f, 0.14f);
-            camera.allowHDR = true;
+            camera.allowHDR = false;
             camera.allowMSAA = true;
             OrbitSortLightingRig.Configure(camera, boardObject.transform);
 

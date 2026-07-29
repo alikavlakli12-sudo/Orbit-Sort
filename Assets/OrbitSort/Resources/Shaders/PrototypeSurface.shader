@@ -19,6 +19,7 @@ Shader "OrbitSort/PrototypeSurface"
         CGPROGRAM
         #pragma surface surf Standard fullforwardshadows addshadow
         #pragma target 3.0
+        #pragma multi_compile_instancing
 
         fixed4 _Color;
         half _Metallic;

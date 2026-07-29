@@ -20,7 +20,7 @@ namespace OrbitSort.Bootstrap
             RuntimeInitializeLoadType.BeforeSceneLoad)]
         private static void CreatePrototype()
         {
-            if (Object.FindFirstObjectByType<OrbitSortGameController>()
+            if (Object.FindAnyObjectByType<OrbitSortGameController>()
                 != null)
             {
                 return;

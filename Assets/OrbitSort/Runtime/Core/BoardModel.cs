@@ -177,6 +177,8 @@ namespace OrbitSort.Core
     {
         private readonly List<RingState> _rings;
         private readonly Dictionary<string, RingState> _ringById;
+        private readonly Dictionary<string, int> _ringIndexById;
+        private readonly int[] _offsetScratch;
         private readonly List<GateState> _gates;
         private readonly Dictionary<string, GateState> _gateById;
         private readonly List<ExitState> _exits;
@@ -198,6 +200,14 @@ namespace OrbitSort.Core
             _ringById = _rings.ToDictionary(
                 ring => ring.Id,
                 StringComparer.OrdinalIgnoreCase);
+            _ringIndexById = new Dictionary<string, int>(
+                StringComparer.OrdinalIgnoreCase);
+            for (int index = 0; index < _rings.Count; index++)
+            {
+                _ringIndexById.Add(_rings[index].Id, index);
+            }
+
+            _offsetScratch = new int[_rings.Count];
             _gates = (level.gates ?? Array.Empty<GateData>())
                 .Select(data => new GateState(data))
                 .ToList();
@@ -424,32 +434,27 @@ namespace OrbitSort.Core
 
         private bool HasReachableProductiveAction()
         {
-            Dictionary<string, int> offsets =
-                new Dictionary<string, int>(
-                    StringComparer.OrdinalIgnoreCase);
-            return ExploreOffsets(0, offsets);
+            return ExploreOffsets(0);
         }
 
-        private bool ExploreOffsets(
-            int ringIndex,
-            Dictionary<string, int> offsets)
+        private bool ExploreOffsets(int ringIndex)
         {
             if (ringIndex >= _rings.Count)
             {
-                return HasImmediateProductiveAction(offsets);
+                return HasImmediateProductiveAction();
             }
 
             RingState ring = _rings[ringIndex];
             if (!ring.CanRotate || ring.MarbleCount == 0)
             {
-                offsets[ring.Id] = ring.RotationOffset;
-                return ExploreOffsets(ringIndex + 1, offsets);
+                _offsetScratch[ringIndex] = ring.RotationOffset;
+                return ExploreOffsets(ringIndex + 1);
             }
 
             for (int offset = 0; offset < ring.Capacity; offset++)
             {
-                offsets[ring.Id] = offset;
-                if (ExploreOffsets(ringIndex + 1, offsets))
+                _offsetScratch[ringIndex] = offset;
+                if (ExploreOffsets(ringIndex + 1))
                 {
                     return true;
                 }
@@ -458,15 +463,14 @@ namespace OrbitSort.Core
             return false;
         }
 
-        private bool HasImmediateProductiveAction(
-            IReadOnlyDictionary<string, int> offsets)
+        private bool HasImmediateProductiveAction()
         {
             foreach (ExitState exit in _exits)
             {
                 RingState ring = _ringById[exit.Ring];
                 if (ring.TryGetMarbleAtWorldIndex(
                         exit.RingIndex,
-                        offsets[ring.Id],
+                        _offsetScratch[_ringIndexById[ring.Id]],
                         out _,
                         out MarbleColor color)
                     && color == exit.Color)
@@ -481,12 +485,12 @@ namespace OrbitSort.Core
                 RingState destination = _ringById[gate.ToRing];
                 if (source.TryGetMarbleAtWorldIndex(
                         gate.FromIndex,
-                        offsets[source.Id],
+                        _offsetScratch[_ringIndexById[source.Id]],
                         out _,
                         out _)
                     && destination.IsWorldIndexEmpty(
                         gate.ToIndex,
-                        offsets[destination.Id],
+                        _offsetScratch[_ringIndexById[destination.Id]],
                         out _))
                 {
                     return true;

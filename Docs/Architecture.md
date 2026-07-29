@@ -70,6 +70,12 @@ angles, then marbles rotate with their ring pivot.
 studio setup, soft shadows, and mobile anti-aliasing used by both gameplay
 and the static visual comparison renderer.
 
+Ring interaction does not rebuild the board. The view keeps the imported
+FBX instances alive, updates ring transforms in `LateUpdate`, and
+synchronizes only marbles that were added, removed, or recolored. Mobile
+fill lights use the vertex-light path, repeated marble meshes use GPU
+instancing, and frame pacing limits the render queue for low input latency.
+
 The view never mutates gameplay state directly.
 
 ### UI

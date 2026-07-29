@@ -28,6 +28,8 @@ Playable prototype:
 - Three short color receiver tubes around the outer ring.
 - Blender-authored studio backdrop with PBR lighting and soft shadows.
 - Perpendicular orthographic top-down gameplay camera.
+- Frame-independent ring dragging with persistent FBX instances and 60 FPS
+  mobile frame pacing.
 - Swipe ring rotation and tap-to-transfer gates.
 - Automatic matching exits, win state, restart, and undo.
 - Search-aware deadlock detection with a visible lose screen.
