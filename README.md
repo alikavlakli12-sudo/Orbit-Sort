@@ -26,6 +26,7 @@ Playable prototype:
 - Three Blender-authored concentric ring assets with visible gaps between them.
 - Exactly two rounded, arrow-marked transfer portals.
 - Three short color receiver tubes around the outer ring.
+- Blender-authored studio backdrop with PBR lighting and soft shadows.
 - Perpendicular orthographic top-down gameplay camera.
 - Swipe ring rotation and tap-to-transfer gates.
 - Automatic matching exits, win state, restart, and undo.
@@ -123,11 +124,24 @@ source. Regenerate the Unity FBX models with:
 ```
 
 The exporter preserves centered ring pivots and reusable portal, receiver,
-hub, and marble meshes. Imported board models are validated by the Unity
-Edit Mode test suite. The `Orbit Sort/Render Static Board Preview` editor
-command regenerates the top-down visual reference without entering Play
-Mode. Pass `--rebuild` to the Blender export command only when intentionally
-regenerating the checked-in source from the scripted geometry definition.
+hub, marble, and shadow-catching backdrop meshes. Imported board models are
+validated by the Unity Edit Mode test suite. The
+`Orbit Sort/Render Static Board Preview` editor command regenerates the
+Unity top-down visual reference without entering Play Mode.
+
+To intentionally rebuild the checked-in Blender source from the scripted
+geometry definition, pass Blender's argument separator followed by the
+exporter flag:
+
+```bash
+/Applications/Blender.app/Contents/MacOS/Blender \
+  --background \
+  --python Docs/Tools/export_board_assets.py \
+  -- --rebuild
+```
+
+The matching direct-overhead Blender comparison render is generated with
+`Docs/Tools/render_topdown_blender_reference.py`.
 
 ## License
 

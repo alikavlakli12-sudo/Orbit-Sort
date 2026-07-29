@@ -192,6 +192,11 @@ def build_assets() -> dict[str, bpy.types.Object]:
     )
     assets["CenterHub"] = create_root("CenterHub", center_parts)
 
+    backdrop_parts = capture_objects(
+        lambda: _add_backdrop(dark)
+    )
+    assets["Backdrop"] = create_root("Backdrop", backdrop_parts)
+
     marble_parts = capture_objects(
         lambda: add_uv_sphere(
             "Marble",
@@ -222,6 +227,16 @@ def _add_center_hub(dark: bpy.types.Material) -> None:
     bevel.segments = 6
 
 
+def _add_backdrop(dark: bpy.types.Material) -> None:
+    bpy.ops.mesh.primitive_cube_add(
+        location=(0.0, 0.0, -0.10),
+        scale=(10.0, 10.0, 0.01),
+    )
+    backdrop = bpy.context.object
+    backdrop.name = "Studio Backdrop Surface"
+    backdrop.data.materials.append(dark)
+
+
 def parse_arguments() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
@@ -233,8 +248,12 @@ def parse_arguments() -> argparse.Namespace:
             "is exported as-is."
         ),
     )
-    arguments, _ = parser.parse_known_args()
-    return arguments
+    script_arguments = (
+        sys.argv[sys.argv.index("--") + 1 :]
+        if "--" in sys.argv
+        else []
+    )
+    return parser.parse_args(script_arguments)
 
 
 def load_asset_roots() -> dict[str, bpy.types.Object]:
@@ -246,6 +265,7 @@ def load_asset_roots() -> dict[str, bpy.types.Object]:
         "Portal",
         "Receiver",
         "CenterHub",
+        "Backdrop",
         "Marble",
     )
     assets: dict[str, bpy.types.Object] = {}
@@ -274,6 +294,7 @@ def main() -> None:
         ("Portal", "Portal.fbx"),
         ("Receiver", "Receiver.fbx"),
         ("CenterHub", "CenterHub.fbx"),
+        ("Backdrop", "Backdrop.fbx"),
         ("Marble", "Marble.fbx"),
     )
     for root_name, filename in exports:

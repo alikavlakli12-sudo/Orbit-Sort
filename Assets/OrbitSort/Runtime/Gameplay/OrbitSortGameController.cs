@@ -81,22 +81,7 @@ namespace OrbitSort.Gameplay
             _camera.farClipPlane = 100f;
             UpdateCameraSize();
 
-            RenderSettings.ambientMode =
-                UnityEngine.Rendering.AmbientMode.Flat;
-            RenderSettings.ambientLight = new Color(0.82f, 0.78f, 0.92f);
-
-            if (FindFirstObjectByType<Light>() == null)
-            {
-                GameObject lightObject =
-                    new GameObject("Orbit Sort Key Light");
-                Light keyLight = lightObject.AddComponent<Light>();
-                keyLight.type = LightType.Directional;
-                keyLight.intensity = 1.15f;
-                keyLight.color = new Color(1f, 0.94f, 0.84f);
-                lightObject.transform.rotation =
-                    Quaternion.Euler(25f, -30f, 0f);
-                lightObject.transform.SetParent(transform, true);
-            }
+            OrbitSortLightingRig.Configure(_camera, transform);
 
             GameObject boardObject = new GameObject("Orbit Sort Board");
             boardObject.transform.SetParent(transform, false);
@@ -211,7 +196,7 @@ namespace OrbitSort.Gameplay
         {
             if (index == 0)
             {
-                return "Swipe a ring to rotate. Tap a green gate to transfer.";
+                return "Swipe a ring to rotate. Tap a gold portal to transfer.";
             }
 
             return "Warning: filling the final outer gap can jam the board.";

@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using OrbitSort.Core;
 using UnityEngine;
+using UnityEngine.Rendering;
 
 namespace OrbitSort.Presentation
 {
@@ -12,6 +13,7 @@ namespace OrbitSort.Presentation
         private const float MinimumSnapDuration = 0.10f;
         private const float MaximumSnapDuration = 0.24f;
         private const string ModelResourceRoot = "Models/";
+        private const float ReceiverRadius = 5.67f;
 
         private static readonly float[] ApprovedRingRadii =
         {
@@ -44,12 +46,14 @@ namespace OrbitSort.Presentation
         private GameObject _receiverModel;
         private GameObject _centerModel;
         private GameObject _marbleModel;
+        private GameObject _backdropModel;
         private Material _trackMaterial;
         private Material _railMaterial;
         private Material _portalMaterial;
         private Material _centerMaterial;
         private Material _exitInteriorMaterial;
         private Material _arrowMaterial;
+        private Material _backdropMaterial;
         private readonly Dictionary<MarbleColor, Material>
             _receiverMaterials =
                 new Dictionary<MarbleColor, Material>();
@@ -70,75 +74,81 @@ namespace OrbitSort.Presentation
             _receiverModel = LoadModel("Receiver");
             _centerModel = LoadModel("CenterHub");
             _marbleModel = LoadModel("Marble");
+            _backdropModel = LoadModel("Backdrop");
 
             _trackMaterial = CreateMaterial(
                 "Track",
-                new Color(0.41f, 0.37f, 0.58f),
+                new Color(0.70f, 0.68f, 0.78f),
                 0.00f,
-                0.58f);
+                0.66f);
             _railMaterial = CreateMaterial(
                 "Rail",
-                new Color(0.89f, 0.78f, 0.60f),
-                0.00f,
-                0.72f);
+                new Color(0.86f, 0.82f, 0.80f),
+                0.04f,
+                0.74f);
             _portalMaterial = CreateMaterial(
                 "Portal",
-                new Color(0.92f, 0.48f, 0.035f),
-                0.62f,
-                0.75f);
+                new Color(0.88f, 0.58f, 0.020f),
+                0.18f,
+                0.76f);
             _centerMaterial = CreateMaterial(
                 "Center",
-                new Color(0.018f, 0.009f, 0.06f),
+                new Color(0.018f, 0.025f, 0.09f),
                 0.00f,
                 0.52f);
             _exitInteriorMaterial = CreateMaterial(
                 "Exit Interior",
-                new Color(0.018f, 0.009f, 0.06f),
+                new Color(0.018f, 0.025f, 0.09f),
                 0.00f,
                 0.52f);
             _arrowMaterial = CreateMaterial(
                 "Gate Arrow",
-                new Color(1f, 0.97f, 0.88f),
+                new Color(0.92f, 0.92f, 0.96f),
                 0.00f,
-                0.80f);
+                0.68f);
+            _backdropMaterial = CreateMaterial(
+                "Studio Backdrop",
+                new Color(0.010f, 0.014f, 0.085f),
+                0.00f,
+                0.30f);
 
             _marbleMaterials[MarbleColor.Blue] =
                 CreateMaterial(
                     "Blue Marble",
-                    new Color(0.025f, 0.24f, 0.95f),
+                    new Color(0.060f, 0.52f, 0.90f),
                     0.05f,
-                    0.90f);
+                    0.74f);
             _marbleMaterials[MarbleColor.Red] =
                 CreateMaterial(
                     "Red Marble",
-                    new Color(0.93f, 0.035f, 0.018f),
+                    new Color(0.95f, 0.060f, 0.030f),
                     0.03f,
-                    0.90f);
+                    0.74f);
             _marbleMaterials[MarbleColor.Yellow] =
                 CreateMaterial(
                     "Yellow Marble",
-                    new Color(1.00f, 0.54f, 0.015f),
+                    new Color(0.90f, 0.68f, 0.030f),
                     0.03f,
-                    0.89f);
+                    0.72f);
 
             _receiverMaterials[MarbleColor.Blue] =
                 CreateMaterial(
                     "Blue Receiver",
-                    new Color(0.015f, 0.22f, 0.95f),
+                    new Color(0.050f, 0.48f, 0.90f),
                     0.10f,
-                    0.82f);
+                    0.76f);
             _receiverMaterials[MarbleColor.Red] =
                 CreateMaterial(
                     "Red Receiver",
-                    new Color(0.93f, 0.025f, 0.018f),
+                    new Color(0.95f, 0.050f, 0.025f),
                     0.08f,
-                    0.82f);
+                    0.76f);
             _receiverMaterials[MarbleColor.Yellow] =
                 CreateMaterial(
                     "Yellow Receiver",
-                    new Color(1.00f, 0.52f, 0.01f),
+                    new Color(0.90f, 0.64f, 0.025f),
                     0.10f,
-                    0.82f);
+                    0.76f);
         }
 
         public void Render(BoardModel model)
@@ -152,6 +162,7 @@ namespace OrbitSort.Presentation
             GameObject content = new GameObject("Board Content");
             content.transform.SetParent(transform, false);
             _contentRoot = content.transform;
+            CreateBackdrop();
 
             if (model.Rings.Count != ApprovedRingRadii.Length)
             {
@@ -372,7 +383,7 @@ namespace OrbitSort.Presentation
         {
             RingState ring = model.GetRing(exit.Ring);
             float angle = AngleForIndex(exit.RingIndex, ring.Capacity);
-            float radius = _ringRadii[exit.Ring] + 1.20f;
+            float radius = ReceiverRadius;
             Vector2 point = PointOnCircle(radius, angle);
 
             GameObject geometry = CreateBlenderModel(
@@ -393,6 +404,24 @@ namespace OrbitSort.Presentation
                 Vector2.zero,
                 0f);
             AssignAllRenderers(geometry, _centerMaterial);
+        }
+
+        private void CreateBackdrop()
+        {
+            GameObject geometry = CreateBlenderModel(
+                _backdropModel,
+                "Studio Backdrop",
+                _contentRoot,
+                Vector2.zero,
+                0f);
+            AssignAllRenderers(geometry, _backdropMaterial);
+
+            foreach (Renderer renderer in
+                     geometry.GetComponentsInChildren<Renderer>(true))
+            {
+                renderer.shadowCastingMode = ShadowCastingMode.Off;
+                renderer.receiveShadows = true;
+            }
         }
 
         private GameObject CreateBlenderModel(
@@ -438,6 +467,7 @@ namespace OrbitSort.Presentation
                     renderer.gameObject.name.Contains("Trough")
                         ? _trackMaterial
                         : _railMaterial;
+                ConfigureBoardRenderer(renderer);
             }
         }
 
@@ -453,6 +483,7 @@ namespace OrbitSort.Presentation
                         : rendererName.Contains("Passage")
                             ? _exitInteriorMaterial
                             : _portalMaterial;
+                ConfigureBoardRenderer(renderer);
             }
         }
 
@@ -467,6 +498,7 @@ namespace OrbitSort.Presentation
                     renderer.gameObject.name.Contains("Opening")
                         ? _exitInteriorMaterial
                         : _receiverMaterials[color];
+                ConfigureBoardRenderer(renderer);
             }
         }
 
@@ -478,7 +510,14 @@ namespace OrbitSort.Presentation
                      geometry.GetComponentsInChildren<Renderer>(true))
             {
                 renderer.sharedMaterial = material;
+                ConfigureBoardRenderer(renderer);
             }
+        }
+
+        private static void ConfigureBoardRenderer(Renderer renderer)
+        {
+            renderer.shadowCastingMode = ShadowCastingMode.On;
+            renderer.receiveShadows = true;
         }
 
         private IEnumerator AnimateRingRotation(

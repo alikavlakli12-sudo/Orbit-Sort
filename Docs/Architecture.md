@@ -58,12 +58,17 @@ Assets/OrbitSort/Runtime/Gameplay/
 
 The approved board geometry is authored in Blender and exported as
 separate FBX models for the three rings, portal, receiver, center hub, and
-marble. Unity imports and positions these meshes; it does not recreate
+marble. A Blender-authored studio backdrop catches the board's real-time
+shadows. Unity imports and positions these meshes; it does not recreate
 their geometry.
 
 The view uses a perpendicular orthographic camera and renders smooth,
 unsegmented ring channels. Hidden logical positions are converted into
 angles, then marbles rotate with their ring pivot.
+
+`OrbitSortLightingRig` applies the shared PBR environment, multi-light
+studio setup, soft shadows, and mobile anti-aliasing used by both gameplay
+and the static visual comparison renderer.
 
 The view never mutates gameplay state directly.
 

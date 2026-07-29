@@ -15,6 +15,7 @@ namespace OrbitSort.Tests.EditMode
         [TestCase("Portal", 3)]
         [TestCase("Receiver", 3)]
         [TestCase("CenterHub", 1)]
+        [TestCase("Backdrop", 1)]
         [TestCase("Marble", 1)]
         public void BlenderBoardModelIsAvailable(
             string modelName,
@@ -60,6 +61,7 @@ namespace OrbitSort.Tests.EditMode
         [TestCase("Portal")]
         [TestCase("Receiver")]
         [TestCase("CenterHub")]
+        [TestCase("Backdrop")]
         [TestCase("Marble")]
         public void BlenderModelIsCenteredOnItsPlacementPivot(
             string modelName)
