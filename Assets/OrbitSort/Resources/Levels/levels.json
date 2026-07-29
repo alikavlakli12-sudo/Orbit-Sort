@@ -92,6 +92,67 @@
         "exit",
         "deadlock"
       ]
+    },
+    {
+      "id": "level_002",
+      "displayName": "Jam Lesson",
+      "designerNotes": "Tap the gate immediately to create a deliberate deadlock. Rotate the outer ring first to make safe space.",
+      "rings": [
+        {
+          "id": "inner",
+          "capacity": 4,
+          "rotationOffset": 0,
+          "marbles": [
+            { "index": 0, "color": "yellow" },
+            { "index": 1, "color": "blue" }
+          ]
+        },
+        {
+          "id": "outer",
+          "capacity": 4,
+          "rotationOffset": 0,
+          "marbles": [
+            { "index": 0, "color": "red" },
+            { "index": 1, "color": "yellow" },
+            { "index": 2, "color": "blue" }
+          ]
+        }
+      ],
+      "gates": [
+        {
+          "id": "gate_inner_outer",
+          "fromRing": "inner",
+          "toRing": "outer",
+          "fromIndex": 0,
+          "toIndex": 3,
+          "direction": "outward"
+        }
+      ],
+      "exits": [
+        {
+          "id": "exit_blue",
+          "ring": "outer",
+          "ringIndex": 0,
+          "color": "blue"
+        },
+        {
+          "id": "exit_red",
+          "ring": "outer",
+          "ringIndex": 1,
+          "color": "red"
+        },
+        {
+          "id": "exit_yellow",
+          "ring": "outer",
+          "ringIndex": 2,
+          "color": "yellow"
+        }
+      ],
+      "tutorialSteps": [
+        "rotate",
+        "transfer",
+        "deadlock"
+      ]
     }
   ]
 }

@@ -19,15 +19,20 @@ The tracks look continuous and have no visible sockets. Underneath the presentat
 
 ## Current status
 
-Repository foundation:
+Playable greybox:
 
 - Unity project pinned to `6000.4.0f1`.
-- Versioned JSON level catalog and schema.
-- Local and continuous-integration level validation.
-- Runtime, editor, and test assembly boundaries.
-- GitHub issue and pull-request templates.
+- Two JSON-authored prototype levels.
+- Continuous concentric tracks with no visible marble sockets.
+- Swipe ring rotation and tap-to-transfer gates.
+- Automatic matching exits, win state, restart, and undo.
+- Search-aware deadlock detection with a visible lose screen.
+- Amber last-gap and red full-ring warnings.
+- Local, Unity, and continuous-integration validation.
 
-Gameplay implementation begins after this foundation is reviewed.
+The greybox uses generated geometry and placeholder materials. Art,
+animation, audio, haptics, and the remaining three to eight levels follow
+after the core loop is approved.
 
 ## Requirements
 
@@ -49,6 +54,19 @@ Git LFS is intentionally not enabled yet because it is not installed on every co
    ```
 
 4. Create a short-lived branch using an approved prefix.
+
+## Playing the prototype
+
+Open `Assets/OrbitSort/Scenes/Prototype.unity` and press Play.
+
+- Swipe directly around a ring to rotate it.
+- Tap a green gate to move an aligned marble outward.
+- `Undo` reverses the last completed action.
+- `Retry` restores the current level.
+- The level arrows switch between the two prototype boards.
+
+For editor keyboard QA, use `U` for undo, `R` for retry, and the left or
+right arrow key to change levels.
 
 ## Branch workflow
 

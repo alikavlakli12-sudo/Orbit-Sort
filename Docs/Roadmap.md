@@ -2,6 +2,8 @@
 
 ## Milestone 1: Repository foundation
 
+Status: complete.
+
 - Professional Unity and Git ignore rules
 - Main and short-lived branch workflow
 - GitHub pull-request and issue templates
@@ -12,6 +14,8 @@
 
 ## Milestone 2: Deterministic board model
 
+Status: complete in the playable greybox.
+
 - Ring, marble, gate, and exit state
 - Legal rotation and transfer rules
 - Command history and undo
@@ -21,14 +25,18 @@
 
 ## Milestone 3: Continuous-track prototype
 
+Status: playable greybox complete; presentation animation remains.
+
 - Three smooth ring channels
 - Hidden-position-to-angle mapping
 - Swipe rotation
 - Gate transfer presentation
-- Automatic exit animation
+- Automatic exit behavior
 - Jam feedback and lose screen
 
 ## Milestone 4: Level production
+
+Status: next.
 
 - Unity level catalog editor
 - Runtime loader and semantic validation

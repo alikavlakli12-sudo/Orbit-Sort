@@ -12,6 +12,9 @@ Move every marble through the concentric rings and into the matching color exit.
 - Use Undo to restore the state before the previous completed action.
 - Use Retry to reload the current level.
 
+The greybox also supports `U` for undo, `R` for retry, and the left and
+right arrow keys for level switching while testing in the Unity editor.
+
 ## Space and rotation
 
 The tracks are visually continuous. Hidden logical positions make the board deterministic.
