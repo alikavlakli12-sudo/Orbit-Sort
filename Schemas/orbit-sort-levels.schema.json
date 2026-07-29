@@ -1,0 +1,238 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/orbit-sort-levels.schema.json",
+  "title": "Orbit Sort level catalog",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "catalogId",
+    "rules",
+    "levels"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": 1
+    },
+    "catalogId": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*$"
+    },
+    "rules": {
+      "$ref": "#/$defs/rules"
+    },
+    "levels": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/level"
+      }
+    }
+  },
+  "$defs": {
+    "color": {
+      "type": "string",
+      "enum": [
+        "blue",
+        "red",
+        "yellow"
+      ]
+    },
+    "rules": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "timerEnabled",
+        "moveCounterEnabled",
+        "ringRequiresGapToRotate",
+        "gatesAreOneWay",
+        "deadlockWhenNoProgress"
+      ],
+      "properties": {
+        "timerEnabled": {
+          "const": false
+        },
+        "moveCounterEnabled": {
+          "const": false
+        },
+        "ringRequiresGapToRotate": {
+          "const": true
+        },
+        "gatesAreOneWay": {
+          "const": true
+        },
+        "deadlockWhenNoProgress": {
+          "const": true
+        }
+      }
+    },
+    "level": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "displayName",
+        "rings",
+        "gates",
+        "exits"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^level_[0-9]{3}$"
+        },
+        "displayName": {
+          "type": "string",
+          "minLength": 1
+        },
+        "designerNotes": {
+          "type": "string"
+        },
+        "rings": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 3,
+          "items": {
+            "$ref": "#/$defs/ring"
+          }
+        },
+        "gates": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/gate"
+          }
+        },
+        "exits": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/exit"
+          }
+        },
+        "tutorialSteps": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "enum": [
+              "rotate",
+              "transfer",
+              "exit",
+              "deadlock"
+            ]
+          }
+        }
+      }
+    },
+    "ring": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "capacity",
+        "rotationOffset",
+        "marbles"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "capacity": {
+          "type": "integer",
+          "minimum": 4,
+          "maximum": 32
+        },
+        "rotationOffset": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "marbles": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/marble"
+          }
+        }
+      }
+    },
+    "marble": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "index",
+        "color"
+      ],
+      "properties": {
+        "index": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "color": {
+          "$ref": "#/$defs/color"
+        }
+      }
+    },
+    "gate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "fromRing",
+        "toRing",
+        "fromIndex",
+        "toIndex",
+        "direction"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "fromRing": {
+          "type": "string"
+        },
+        "toRing": {
+          "type": "string"
+        },
+        "fromIndex": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "toIndex": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "direction": {
+          "const": "outward"
+        }
+      }
+    },
+    "exit": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "ring",
+        "ringIndex",
+        "color"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "ring": {
+          "type": "string"
+        },
+        "ringIndex": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "color": {
+          "$ref": "#/$defs/color"
+        }
+      }
+    }
+  }
+}

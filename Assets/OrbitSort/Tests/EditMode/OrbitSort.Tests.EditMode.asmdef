@@ -1,0 +1,22 @@
+{
+  "name": "OrbitSort.Tests.EditMode",
+  "rootNamespace": "OrbitSort.Tests.EditMode",
+  "references": [
+    "OrbitSort.Runtime",
+    "OrbitSort.Editor"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": false,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false,
+  "optionalUnityReferences": [
+    "TestAssemblies"
+  ]
+}
