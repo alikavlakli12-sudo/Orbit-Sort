@@ -7,7 +7,7 @@ Move every marble through the concentric rings and into the matching color exit.
 ## Controls
 
 - Swipe a ring to rotate its marble chain around the track.
-- Tap a transfer gate to move one aligned marble outward.
+- Press an aligned marble and swipe it toward its transfer portal.
 - A marble aligned with its matching exit leaves automatically.
 - Use Undo to restore the state before the previous completed action.
 - Use Retry to reload the current level.
@@ -25,8 +25,11 @@ A ring needs at least one marble-sized gap to rotate. A completely full ring is 
 
 - Prototype gates are one-way and point outward.
 - A transfer requires an aligned source marble.
+- The swipe must point from that marble toward its portal.
 - The destination position must be empty.
 - Gates move one marble at a time.
+- A successful marble accelerates and shrinks into the portal, then
+  launches outward, grows, and settles on the connected ring.
 - Invalid transfers do not change the board state.
 
 ## Exit
@@ -57,5 +60,5 @@ Undo remains available on the lose screen when a previous state exists.
 - Open track must make available space visible.
 - The last remaining gap on a ring receives an amber warning.
 - A full ring receives a red rim and a mechanical jam response.
-- A blocked gate flashes or shakes when tapped.
+- A blocked transfer gives immediate feedback after the swipe.
 - Deadlock evaluation runs only after animations and automatic exits finish.

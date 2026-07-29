@@ -25,7 +25,7 @@ namespace OrbitSort.UI
         private BoardModel _model;
         private string _levelLabel = "ORBIT SORT";
         private string _message =
-            "Swipe a ring. Tap a green gate to transfer.";
+            "Swipe a ring. Swipe an aligned marble toward its portal.";
         private string _fatalMessage;
         private int _levelIndex;
         private int _levelCount;

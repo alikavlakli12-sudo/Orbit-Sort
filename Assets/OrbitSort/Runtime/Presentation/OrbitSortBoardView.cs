@@ -13,6 +13,10 @@ namespace OrbitSort.Presentation
         private const float MinimumSnapDuration = 0.10f;
         private const float MaximumSnapDuration = 0.24f;
         private const float DragFollowSharpness = 90f;
+        private const float TransferMarbleHitRadius = 0.62f;
+        private const float GravityEntryDuration = 0.28f;
+        private const float GravityExitDuration = 0.28f;
+        private const float PortalScale = 0.08f;
         private const string ModelResourceRoot = "Models/";
         private const float ReceiverRadius = 5.67f;
 
@@ -71,6 +75,7 @@ namespace OrbitSort.Presentation
             _receiverMaterials =
                 new Dictionary<MarbleColor, Material>();
         private Coroutine _ringAnimation;
+        private Coroutine _transferAnimation;
         private string _previewRingId;
         private float _previewBaseAngle;
         private float _previewTargetAngle;
@@ -171,6 +176,7 @@ namespace OrbitSort.Presentation
         public void Render(BoardModel model)
         {
             StopRingAnimation();
+            StopTransferAnimation();
             ClearContent();
             _ringRadii.Clear();
             _ringRoots.Clear();
@@ -269,24 +275,68 @@ namespace OrbitSort.Presentation
             return ringId != null;
         }
 
-        public bool TryGetGateAtWorldPoint(
+        public bool TryGetTransferMarbleAtWorldPoint(
+            BoardModel model,
             Vector2 worldPoint,
-            out string gateId)
+            out string gateId,
+            out Vector2 marbleWorldPosition)
         {
-            float bestDistance = 0.72f;
+            float bestDistance = TransferMarbleHitRadius;
             gateId = null;
+            marbleWorldPosition = Vector2.zero;
 
-            foreach (KeyValuePair<string, Vector2> gate in _gatePositions)
+            foreach (GateState gate in model.Gates)
             {
-                float distance = Vector2.Distance(worldPoint, gate.Value);
+                RingState source = model.GetRing(gate.FromRing);
+                if (!source.TryGetMarbleAtWorldIndex(
+                        gate.FromIndex,
+                        source.RotationOffset,
+                        out int sourceLocalIndex,
+                        out _)
+                    || !_marbleVisuals.TryGetValue(
+                        source.Id,
+                        out Dictionary<int, MarbleVisual> visuals)
+                    || !visuals.TryGetValue(
+                        sourceLocalIndex,
+                        out MarbleVisual visual)
+                    || visual.Placement == null)
+                {
+                    continue;
+                }
+
+                Vector3 position = visual.Placement.transform.position;
+                Vector2 marblePosition =
+                    new Vector2(position.x, position.y);
+                float distance =
+                    Vector2.Distance(worldPoint, marblePosition);
                 if (distance < bestDistance)
                 {
                     bestDistance = distance;
-                    gateId = gate.Key;
+                    gateId = gate.Id;
+                    marbleWorldPosition = marblePosition;
                 }
             }
 
             return gateId != null;
+        }
+
+        public bool TryGetGateWorldPosition(
+            string gateId,
+            out Vector2 worldPosition)
+        {
+            worldPosition = Vector2.zero;
+            if (_contentRoot == null
+                || !_gatePositions.TryGetValue(
+                    gateId,
+                    out Vector2 localPosition))
+            {
+                return false;
+            }
+
+            Vector3 transformed = _contentRoot.TransformPoint(
+                new Vector3(localPosition.x, localPosition.y, 0f));
+            worldPosition = new Vector2(transformed.x, transformed.y);
+            return true;
         }
 
         public float GetRingStepAngle(string ringId, BoardModel model)
@@ -373,6 +423,85 @@ namespace OrbitSort.Presentation
                     duration,
                     model,
                     onComplete));
+        }
+
+        public bool AnimateGateTransfer(
+            string gateId,
+            BoardModel model,
+            Action onComplete)
+        {
+            if (_transferAnimation != null
+                || _ringAnimation != null
+                || _dynamicRoot == null
+                || !_gatePositions.TryGetValue(
+                    gateId,
+                    out Vector2 gateLocalPosition))
+            {
+                return false;
+            }
+
+            GateState gate = model.GetGate(gateId);
+            RingState source = model.GetRing(gate.FromRing);
+            RingState destination = model.GetRing(gate.ToRing);
+            int sourceLocalIndex = BoardModel.Mod(
+                gate.FromIndex - source.RotationOffset,
+                source.Capacity);
+            int destinationLocalIndex = BoardModel.Mod(
+                gate.ToIndex - destination.RotationOffset,
+                destination.Capacity);
+
+            if (!_marbleVisuals.TryGetValue(
+                    source.Id,
+                    out Dictionary<int, MarbleVisual> sourceVisuals)
+                || !sourceVisuals.TryGetValue(
+                    sourceLocalIndex,
+                    out MarbleVisual visual)
+                || visual.Placement == null
+                || !_ringRoots.TryGetValue(
+                    destination.Id,
+                    out Transform destinationRoot))
+            {
+                return false;
+            }
+
+            Transform marble = visual.Placement.transform;
+            Vector3 startWorldPosition = marble.position;
+            Vector3 portalWorldPosition = _contentRoot.TransformPoint(
+                new Vector3(
+                    gateLocalPosition.x,
+                    gateLocalPosition.y,
+                    0f));
+            Vector2 destinationLocalPosition = PointOnCircle(
+                _ringRadii[destination.Id],
+                destinationLocalIndex,
+                destination.Capacity);
+            Vector3 destinationWorldPosition =
+                destinationRoot.TransformPoint(
+                    new Vector3(
+                        destinationLocalPosition.x,
+                        destinationLocalPosition.y,
+                        0f));
+
+            portalWorldPosition.z = startWorldPosition.z;
+            destinationWorldPosition.z = startWorldPosition.z;
+            marble.SetParent(_dynamicRoot, true);
+            Vector3 fullScale = marble.localScale;
+
+            _transferAnimation = StartCoroutine(
+                AnimateGravityTransfer(
+                    visual,
+                    source,
+                    sourceLocalIndex,
+                    destination,
+                    destinationLocalIndex,
+                    destinationRoot,
+                    startWorldPosition,
+                    portalWorldPosition,
+                    destinationWorldPosition,
+                    fullScale,
+                    model,
+                    onComplete));
+            return true;
         }
 
         private Transform CreateRingRoot(RingState ring)
@@ -655,6 +784,124 @@ namespace OrbitSort.Presentation
             renderer.receiveShadows = true;
         }
 
+        private IEnumerator AnimateGravityTransfer(
+            MarbleVisual visual,
+            RingState source,
+            int sourceLocalIndex,
+            RingState destination,
+            int destinationLocalIndex,
+            Transform destinationRoot,
+            Vector3 startWorldPosition,
+            Vector3 portalWorldPosition,
+            Vector3 destinationWorldPosition,
+            Vector3 fullScale,
+            BoardModel model,
+            Action onComplete)
+        {
+            Transform marble = visual.Placement.transform;
+            float elapsed = 0f;
+            while (elapsed < GravityEntryDuration && marble != null)
+            {
+                elapsed += Time.unscaledDeltaTime;
+                float progress =
+                    Mathf.Clamp01(elapsed / GravityEntryDuration);
+                float gravityProgress =
+                    progress * progress * progress;
+                marble.position = Vector3.LerpUnclamped(
+                    startWorldPosition,
+                    portalWorldPosition,
+                    gravityProgress);
+                marble.localScale = fullScale * Mathf.LerpUnclamped(
+                    1f,
+                    PortalScale,
+                    SmootherStep(progress));
+                yield return null;
+            }
+
+            if (marble != null)
+            {
+                marble.position = portalWorldPosition;
+                marble.localScale = fullScale * PortalScale;
+            }
+
+            elapsed = 0f;
+            while (elapsed < GravityExitDuration && marble != null)
+            {
+                elapsed += Time.unscaledDeltaTime;
+                float progress =
+                    Mathf.Clamp01(elapsed / GravityExitDuration);
+                float inverse = 1f - progress;
+                float gravityProgress =
+                    1f - inverse * inverse * inverse;
+                marble.position = Vector3.LerpUnclamped(
+                    portalWorldPosition,
+                    destinationWorldPosition,
+                    gravityProgress);
+                marble.localScale = fullScale * Mathf.LerpUnclamped(
+                    PortalScale,
+                    1f,
+                    SmootherStep(progress));
+                yield return null;
+            }
+
+            _transferAnimation = null;
+            CompleteGateTransfer(
+                visual,
+                source,
+                sourceLocalIndex,
+                destination,
+                destinationLocalIndex,
+                destinationRoot,
+                fullScale,
+                model);
+            onComplete?.Invoke();
+        }
+
+        private void CompleteGateTransfer(
+            MarbleVisual visual,
+            RingState source,
+            int sourceLocalIndex,
+            RingState destination,
+            int destinationLocalIndex,
+            Transform destinationRoot,
+            Vector3 fullScale,
+            BoardModel model)
+        {
+            _marbleVisuals[source.Id].Remove(sourceLocalIndex);
+
+            bool marbleLanded =
+                destination.Marbles.TryGetValue(
+                    destinationLocalIndex,
+                    out MarbleColor destinationColor)
+                && destinationColor == visual.Color;
+            Dictionary<int, MarbleVisual> destinationVisuals =
+                _marbleVisuals[destination.Id];
+            if (marbleLanded
+                && !destinationVisuals.ContainsKey(destinationLocalIndex)
+                && visual.Placement != null)
+            {
+                Transform marble = visual.Placement.transform;
+                Vector2 localPosition = PointOnCircle(
+                    _ringRadii[destination.Id],
+                    destinationLocalIndex,
+                    destination.Capacity);
+                marble.SetParent(destinationRoot, false);
+                marble.localPosition = new Vector3(
+                    localPosition.x,
+                    localPosition.y,
+                    0f);
+                marble.localRotation = Quaternion.identity;
+                marble.localScale = fullScale;
+                destinationVisuals.Add(destinationLocalIndex, visual);
+            }
+            else if (visual.Placement != null)
+            {
+                ReleaseObject(visual.Placement);
+            }
+
+            SynchronizeModel(model);
+        }
+
         private IEnumerator AnimateRingRotation(
             Transform ringRoot,
             float startAngle,
@@ -691,6 +938,15 @@ namespace OrbitSort.Presentation
             _previewRingId = null;
             SynchronizeModel(model);
             onComplete?.Invoke();
+        }
+
+        private static float SmootherStep(float value)
+        {
+            float t = Mathf.Clamp01(value);
+            return t
+                   * t
+                   * t
+                   * (t * (t * 6f - 15f) + 10f);
         }
 
         private void LateUpdate()
@@ -730,6 +986,17 @@ namespace OrbitSort.Presentation
             }
 
             _previewRingId = null;
+        }
+
+        private void StopTransferAnimation()
+        {
+            if (_transferAnimation == null)
+            {
+                return;
+            }
+
+            StopCoroutine(_transferAnimation);
+            _transferAnimation = null;
         }
 
         private static float SignedLocalAngle(Transform target)
@@ -851,6 +1118,7 @@ namespace OrbitSort.Presentation
         private void OnDestroy()
         {
             StopRingAnimation();
+            StopTransferAnimation();
             foreach (UnityEngine.Object asset in _generatedAssets)
             {
                 if (asset != null)

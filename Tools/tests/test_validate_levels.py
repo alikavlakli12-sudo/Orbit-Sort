@@ -101,6 +101,17 @@ class LevelCatalogValidationTests(unittest.TestCase):
             errors,
         )
 
+    def test_portal_indexes_must_share_the_same_angle(self) -> None:
+        catalog = copy.deepcopy(self.valid_catalog)
+        catalog["levels"][0]["gates"][0]["toIndex"] = 1
+
+        errors, _ = validate_levels.validate_catalog(catalog)
+
+        self.assertTrue(
+            any("must share the same board angle" in error for error in errors),
+            errors,
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

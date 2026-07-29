@@ -134,7 +134,7 @@
           "fromRing": "inner",
           "toRing": "middle",
           "fromIndex": 0,
-          "toIndex": 3,
+          "toIndex": 0,
           "direction": "outward"
         },
         {

@@ -246,6 +246,18 @@ namespace OrbitSort.Core
             return ring;
         }
 
+        public GateState GetGate(string gateId)
+        {
+            if (!_gateById.TryGetValue(gateId, out GateState gate))
+            {
+                throw new ArgumentException(
+                    $"Unknown gate '{gateId}'.",
+                    nameof(gateId));
+            }
+
+            return gate;
+        }
+
         public BoardActionResult TryRotateRing(
             string ringId,
             int deltaSteps)

@@ -283,6 +283,27 @@ def validate_gates(
                 errors,
             )
 
+            from_index = gate.get("fromIndex")
+            to_index = gate.get("toIndex")
+            from_capacity = ring_capacities[from_ring]
+            to_capacity = ring_capacities[to_ring]
+            indexes_are_valid = (
+                isinstance(from_index, int)
+                and not isinstance(from_index, bool)
+                and 0 <= from_index < from_capacity
+                and isinstance(to_index, int)
+                and not isinstance(to_index, bool)
+                and 0 <= to_index < to_capacity
+            )
+            if (
+                indexes_are_valid
+                and from_index * to_capacity != to_index * from_capacity
+            ):
+                errors.append(
+                    f"{gate_context}: portal indexes must share "
+                    "the same board angle"
+                )
+
         if gate.get("direction") != "outward":
             errors.append(f"{gate_context}.direction: expected 'outward'")
 

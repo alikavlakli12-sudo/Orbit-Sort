@@ -51,5 +51,56 @@ namespace OrbitSort.Tests.EditMode
                 Object.DestroyImmediate(host);
             }
         }
+
+        [Test]
+        public void TransferSelectionUsesTheAlignedMarbleNotThePortal()
+        {
+            GameObject host = new GameObject("Transfer Selection Test");
+            try
+            {
+                LevelCatalogData catalog =
+                    LevelCatalogLoader.LoadFromResources();
+                BoardModel model = new BoardModel(catalog.levels[0]);
+                BoardActionResult rotation =
+                    model.TryRotateRing("inner", -1);
+                Assert.That(rotation.Succeeded, Is.True);
+
+                OrbitSortBoardView view =
+                    host.AddComponent<OrbitSortBoardView>();
+                view.Initialize();
+                view.Render(model);
+
+                bool marbleSelected =
+                    view.TryGetTransferMarbleAtWorldPoint(
+                        model,
+                        new Vector2(0f, 1.80f),
+                        out string gateId,
+                        out Vector2 marblePosition);
+                Assert.That(marbleSelected, Is.True);
+                Assert.That(gateId, Is.EqualTo("gate_inner_middle"));
+                Assert.That(
+                    Vector2.Distance(
+                        marblePosition,
+                        new Vector2(0f, 1.80f)),
+                    Is.LessThan(0.001f));
+
+                Assert.That(
+                    view.TryGetGateWorldPosition(
+                        gateId,
+                        out Vector2 portalPosition),
+                    Is.True);
+                Assert.That(
+                    view.TryGetTransferMarbleAtWorldPoint(
+                        model,
+                        portalPosition,
+                        out _,
+                        out _),
+                    Is.False);
+            }
+            finally
+            {
+                Object.DestroyImmediate(host);
+            }
+        }
     }
 }

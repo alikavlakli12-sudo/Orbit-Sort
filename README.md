@@ -30,15 +30,16 @@ Playable prototype:
 - Perpendicular orthographic top-down gameplay camera.
 - Frame-independent ring dragging with persistent FBX instances and 60 FPS
   mobile frame pacing.
-- Swipe ring rotation and tap-to-transfer gates.
+- Swipe ring rotation and directional marble-to-portal transfers.
+- Gravity-style portal animation with continuous shrink, launch, and regrowth.
 - Automatic matching exits, win state, restart, and undo.
 - Search-aware deadlock detection with a visible lose screen.
 - Local, Unity, and continuous-integration validation.
 
 The approved geometry is exported from Blender and imported into Unity;
-Unity does not procedurally rebuild it. Animation polish, audio, haptics,
-and the remaining three to eight levels follow after this visual
-milestone is approved.
+Unity does not procedurally rebuild it. Additional animation polish,
+audio, haptics, and the remaining three to eight levels follow after
+this visual milestone is approved.
 
 ## Requirements
 
@@ -69,7 +70,8 @@ art, audio, or video files.
 Open `Assets/OrbitSort/Scenes/Prototype.unity` and press Play.
 
 - Swipe directly around a ring to rotate it.
-- Tap an arrow-marked gold portal to move an aligned marble outward.
+- Press an aligned marble and swipe it toward the arrow-marked gold
+  portal to move it outward.
 - `Undo` reverses the last completed action.
 - `Retry` restores the current level.
 - The level arrows switch between the two prototype boards.

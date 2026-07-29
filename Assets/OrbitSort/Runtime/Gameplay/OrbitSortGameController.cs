@@ -8,8 +8,8 @@ namespace OrbitSort.Gameplay
 {
     public sealed class OrbitSortGameController : MonoBehaviour
     {
-        private const float TapThresholdPixels = 26f;
         private const float DragThresholdPixels = 32f;
+        private const float MinimumTransferDirectionDot = 0.68f;
         private const float MinimumRotationAngleDegrees = 3f;
         private const float MinimumPointerRadiusSqr = 0.25f;
 
@@ -28,8 +28,10 @@ namespace OrbitSort.Gameplay
         private float _dragAngleDegrees;
         private float _maximumDragDistanceSqr;
         private bool _isAnimatingRing;
+        private bool _isAnimatingTransfer;
         private string _selectedRingId;
         private string _selectedGateId;
+        private Vector2 _selectedMarbleWorldPosition;
         private float _lastCameraAspect = -1f;
 
         public BoardModel Model => _model;
@@ -198,7 +200,8 @@ namespace OrbitSort.Gameplay
         {
             if (index == 0)
             {
-                return "Swipe a ring to rotate. Tap a gold portal to transfer.";
+                return "Swipe a ring to rotate. Swipe an aligned marble "
+                       + "toward its portal.";
             }
 
             return "Warning: filling the final outer gap can jam the board.";
@@ -230,17 +233,21 @@ namespace OrbitSort.Gameplay
             _pointerBlockedByHud = _hud.IsPointerOverUi(screenPosition);
             _selectedRingId = null;
             _selectedGateId = null;
+            _selectedMarbleWorldPosition = Vector2.zero;
 
             if (_pointerBlockedByHud)
             {
                 return;
             }
 
-            if (_boardView.TryGetGateAtWorldPoint(
+            if (_boardView.TryGetTransferMarbleAtWorldPoint(
+                    _model,
                     _pointerStartWorld,
-                    out string gateId))
+                    out string gateId,
+                    out Vector2 marbleWorldPosition))
             {
                 _selectedGateId = gateId;
+                _selectedMarbleWorldPosition = marbleWorldPosition;
                 return;
             }
 
@@ -257,8 +264,7 @@ namespace OrbitSort.Gameplay
         private void UpdatePointer(Vector2 screenPosition)
         {
             if (!_pointerDown
-                || _pointerBlockedByHud
-                || _selectedRingId == null)
+                || _pointerBlockedByHud)
             {
                 return;
             }
@@ -268,6 +274,11 @@ namespace OrbitSort.Gameplay
             _maximumDragDistanceSqr = Mathf.Max(
                 _maximumDragDistanceSqr,
                 dragDistanceSqr);
+
+            if (_selectedRingId == null)
+            {
+                return;
+            }
 
             Vector2 currentWorld = ScreenToBoardWorld(screenPosition);
             if (currentWorld.sqrMagnitude > MinimumPointerRadiusSqr)
@@ -311,12 +322,37 @@ namespace OrbitSort.Gameplay
             float dragDistanceSqr = Mathf.Max(
                 _maximumDragDistanceSqr,
                 (screenPosition - _pointerStartScreen).sqrMagnitude);
-            if (_selectedGateId != null
-                && dragDistanceSqr
-                    <= TapThresholdPixels * TapThresholdPixels)
+            if (_selectedGateId != null)
             {
-                ApplyResult(_model.TryTransferGate(_selectedGateId));
+                string gateId = _selectedGateId;
+                Vector2 swipe = ScreenToBoardWorld(screenPosition)
+                                - _pointerStartWorld;
+                bool isLongEnough =
+                    dragDistanceSqr
+                    >= DragThresholdPixels * DragThresholdPixels;
+                bool pointsTowardPortal =
+                    _boardView.TryGetGateWorldPosition(
+                        gateId,
+                        out Vector2 portalWorldPosition)
+                    && Vector2.Dot(
+                        swipe.normalized,
+                        (portalWorldPosition
+                         - _selectedMarbleWorldPosition).normalized)
+                    >= MinimumTransferDirectionDot;
                 ClearPointerState();
+
+                if (isLongEnough && pointsTowardPortal)
+                {
+                    AnimateGateTransfer(gateId);
+                }
+                else
+                {
+                    RefreshHud(
+                        BoardActionResult.Failure(
+                            "Swipe the aligned marble toward its portal.",
+                            _model.Phase));
+                }
+
                 return;
             }
 
@@ -353,6 +389,32 @@ namespace OrbitSort.Gameplay
             }
 
             ClearPointerState();
+        }
+
+        private void AnimateGateTransfer(string gateId)
+        {
+            BoardActionResult result = _model.TryTransferGate(gateId);
+            if (!result.Succeeded)
+            {
+                RefreshHud(result);
+                return;
+            }
+
+            _isAnimatingTransfer = true;
+            if (_boardView.AnimateGateTransfer(
+                    gateId,
+                    _model,
+                    () =>
+                    {
+                        _isAnimatingTransfer = false;
+                        RefreshHud(result);
+                    }))
+            {
+                return;
+            }
+
+            _isAnimatingTransfer = false;
+            ApplyResult(result);
         }
 
         private void ApplyResult(BoardActionResult result)
@@ -461,6 +523,7 @@ namespace OrbitSort.Gameplay
 
         private bool InputIsBusy =>
             _isAnimatingRing
+            || _isAnimatingTransfer
             || (_pointerDown && !_pointerBlockedByHud);
 
         private void CancelPointerAndRestoreRing()
@@ -482,6 +545,7 @@ namespace OrbitSort.Gameplay
             _maximumDragDistanceSqr = 0f;
             _selectedRingId = null;
             _selectedGateId = null;
+            _selectedMarbleWorldPosition = Vector2.zero;
         }
     }
 }
