@@ -14,6 +14,7 @@ Allowed prefixes:
 - `release/` for release preparation
 
 Do not use personal names, agent names, or tool names as branch prefixes.
+The `codex/` prefix is explicitly prohibited.
 
 Examples:
 

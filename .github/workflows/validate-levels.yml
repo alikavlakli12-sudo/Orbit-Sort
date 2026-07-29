@@ -14,6 +14,27 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  branch-name:
+    name: Branch naming policy
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Validate branch name
+        env:
+          BRANCH_NAME: ${{ github.head_ref }}
+        shell: bash
+        run: |
+          if [[ "$BRANCH_NAME" == "codex" || "$BRANCH_NAME" == codex/* ]]; then
+            echo "The codex/ branch prefix is prohibited."
+            exit 1
+          fi
+
+          if [[ ! "$BRANCH_NAME" =~ ^(feature|fix|chore|docs|test|release)/[a-z0-9][a-z0-9-]*$ ]]; then
+            echo "Branch must use an approved prefix and lowercase kebab-case name."
+            exit 1
+          fi
+
   level-data:
     name: Level data and validator tests
     runs-on: ubuntu-latest
