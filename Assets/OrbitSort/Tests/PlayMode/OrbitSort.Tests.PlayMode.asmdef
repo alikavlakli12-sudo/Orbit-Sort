@@ -1,0 +1,19 @@
+{
+  "name": "OrbitSort.Tests.PlayMode",
+  "rootNamespace": "OrbitSort.Tests.PlayMode",
+  "references": [
+    "OrbitSort.Runtime"
+  ],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": false,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false,
+  "optionalUnityReferences": [
+    "TestAssemblies"
+  ]
+}

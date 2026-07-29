@@ -1,0 +1,97 @@
+{
+  "schemaVersion": 1,
+  "catalogId": "orbit_sort_prototype",
+  "rules": {
+    "timerEnabled": false,
+    "moveCounterEnabled": false,
+    "ringRequiresGapToRotate": true,
+    "gatesAreOneWay": true,
+    "deadlockWhenNoProgress": true
+  },
+  "levels": [
+    {
+      "id": "level_001",
+      "displayName": "First Orbit",
+      "designerNotes": "Foundation data used to validate the catalog shape. Final gameplay tuning follows the deterministic board model.",
+      "rings": [
+        {
+          "id": "inner",
+          "capacity": 8,
+          "rotationOffset": 0,
+          "marbles": [
+            { "index": 1, "color": "blue" },
+            { "index": 3, "color": "red" },
+            { "index": 5, "color": "yellow" }
+          ]
+        },
+        {
+          "id": "middle",
+          "capacity": 12,
+          "rotationOffset": 0,
+          "marbles": [
+            { "index": 2, "color": "yellow" },
+            { "index": 5, "color": "blue" },
+            { "index": 8, "color": "red" },
+            { "index": 10, "color": "yellow" }
+          ]
+        },
+        {
+          "id": "outer",
+          "capacity": 16,
+          "rotationOffset": 0,
+          "marbles": [
+            { "index": 1, "color": "red" },
+            { "index": 4, "color": "blue" },
+            { "index": 7, "color": "yellow" },
+            { "index": 10, "color": "red" },
+            { "index": 13, "color": "blue" }
+          ]
+        }
+      ],
+      "gates": [
+        {
+          "id": "gate_inner_middle",
+          "fromRing": "inner",
+          "toRing": "middle",
+          "fromIndex": 0,
+          "toIndex": 0,
+          "direction": "outward"
+        },
+        {
+          "id": "gate_middle_outer",
+          "fromRing": "middle",
+          "toRing": "outer",
+          "fromIndex": 6,
+          "toIndex": 8,
+          "direction": "outward"
+        }
+      ],
+      "exits": [
+        {
+          "id": "exit_blue",
+          "ring": "outer",
+          "ringIndex": 0,
+          "color": "blue"
+        },
+        {
+          "id": "exit_red",
+          "ring": "outer",
+          "ringIndex": 5,
+          "color": "red"
+        },
+        {
+          "id": "exit_yellow",
+          "ring": "outer",
+          "ringIndex": 11,
+          "color": "yellow"
+        }
+      ],
+      "tutorialSteps": [
+        "rotate",
+        "transfer",
+        "exit",
+        "deadlock"
+      ]
+    }
+  ]
+}
