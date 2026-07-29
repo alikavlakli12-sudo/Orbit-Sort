@@ -73,8 +73,11 @@ and the static visual comparison renderer.
 Ring interaction does not rebuild the board. The view keeps the imported
 FBX instances alive, updates ring transforms in `LateUpdate`, and
 synchronizes only marbles that were added, removed, or recolored. Mobile
-fill lights use the vertex-light path, repeated marble meshes use GPU
-instancing, and frame pacing limits the render queue for low input latency.
+fill lights use the vertex-light path, the material shader uses one forward
+pass, repeated marble meshes use GPU instancing, and non-moving board
+geometry is statically batched. Shadow cascades are disabled because the
+entire board occupies one shallow orthographic depth range. Frame pacing
+limits the render queue for low input latency.
 
 The view never mutates gameplay state directly.
 

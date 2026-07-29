@@ -17,7 +17,7 @@ Shader "OrbitSort/PrototypeSurface"
         LOD 300
 
         CGPROGRAM
-        #pragma surface surf Standard fullforwardshadows addshadow
+        #pragma surface surf Standard fullforwardshadows addshadow noforwardadd
         #pragma target 3.0
         #pragma multi_compile_instancing
 

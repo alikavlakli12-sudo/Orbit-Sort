@@ -12,7 +12,7 @@ namespace OrbitSort.Presentation
         private const float TrackHalfWidth = 0.48f;
         private const float MinimumSnapDuration = 0.10f;
         private const float MaximumSnapDuration = 0.24f;
-        private const float DragFollowSharpness = 52f;
+        private const float DragFollowSharpness = 90f;
         private const string ModelResourceRoot = "Models/";
         private const float ReceiverRadius = 5.67f;
 
@@ -52,6 +52,8 @@ namespace OrbitSort.Presentation
             new Dictionary<MarbleColor, Material>();
 
         private Transform _contentRoot;
+        private Transform _staticRoot;
+        private Transform _dynamicRoot;
         private GameObject[] _ringModels;
         private GameObject _portalModel;
         private GameObject _receiverModel;
@@ -129,19 +131,22 @@ namespace OrbitSort.Presentation
                     "Blue Marble",
                     new Color(0.060f, 0.52f, 0.90f),
                     0.05f,
-                    0.74f);
+                    0.74f,
+                    true);
             _marbleMaterials[MarbleColor.Red] =
                 CreateMaterial(
                     "Red Marble",
                     new Color(0.95f, 0.060f, 0.030f),
                     0.03f,
-                    0.74f);
+                    0.74f,
+                    true);
             _marbleMaterials[MarbleColor.Yellow] =
                 CreateMaterial(
                     "Yellow Marble",
                     new Color(0.90f, 0.68f, 0.030f),
                     0.03f,
-                    0.72f);
+                    0.72f,
+                    true);
 
             _receiverMaterials[MarbleColor.Blue] =
                 CreateMaterial(
@@ -175,6 +180,17 @@ namespace OrbitSort.Presentation
             GameObject content = new GameObject("Board Content");
             content.transform.SetParent(transform, false);
             _contentRoot = content.transform;
+
+            GameObject staticGeometry =
+                new GameObject("Static Board Geometry");
+            staticGeometry.transform.SetParent(_contentRoot, false);
+            _staticRoot = staticGeometry.transform;
+
+            GameObject dynamicMarbles =
+                new GameObject("Dynamic Marbles");
+            dynamicMarbles.transform.SetParent(_contentRoot, false);
+            _dynamicRoot = dynamicMarbles.transform;
+
             CreateBackdrop();
 
             if (model.Rings.Count != ApprovedRingRadii.Length)
@@ -190,7 +206,7 @@ namespace OrbitSort.Presentation
                 _ringRadii[ring.Id] = radius;
                 Transform ringRoot = CreateRingRoot(ring);
                 _ringRoots[ring.Id] = ringRoot;
-                CreateRing(index, ringRoot);
+                CreateRing(index, ring.Id);
                 CreateMarbles(ring, radius, ringRoot);
             }
 
@@ -204,6 +220,12 @@ namespace OrbitSort.Presentation
             foreach (ExitState exit in model.Exits)
             {
                 CreateExit(model, exit);
+            }
+
+            if (Application.isPlaying)
+            {
+                StaticBatchingUtility.Combine(
+                    _staticRoot.gameObject);
             }
         }
 
@@ -356,7 +378,7 @@ namespace OrbitSort.Presentation
         private Transform CreateRingRoot(RingState ring)
         {
             GameObject root = new GameObject($"{ring.Id} Ring");
-            root.transform.SetParent(_contentRoot, false);
+            root.transform.SetParent(_dynamicRoot, false);
             float stepAngle = 360f / ring.Capacity;
             SetLocalAngle(
                 root.transform,
@@ -364,12 +386,12 @@ namespace OrbitSort.Presentation
             return root.transform;
         }
 
-        private void CreateRing(int ringIndex, Transform ringRoot)
+        private void CreateRing(int ringIndex, string ringId)
         {
             GameObject geometry = CreateBlenderModel(
                 _ringModels[ringIndex],
-                "Blender Ring Geometry",
-                ringRoot,
+                $"{ringId} Ring Geometry",
+                _staticRoot,
                 Vector2.zero,
                 0f);
             AssignRingMaterials(geometry);
@@ -486,7 +508,7 @@ namespace OrbitSort.Presentation
             GameObject geometry = CreateBlenderModel(
                 _portalModel,
                 gate.Id,
-                _contentRoot,
+                _staticRoot,
                 point,
                 angle - 90f);
             AssignPortalMaterials(geometry);
@@ -502,7 +524,7 @@ namespace OrbitSort.Presentation
             GameObject geometry = CreateBlenderModel(
                 _receiverModel,
                 $"{MarbleColorUtility.DisplayName(exit.Color)} Receiver",
-                _contentRoot,
+                _staticRoot,
                 point,
                 angle);
             AssignReceiverMaterials(geometry, exit.Color);
@@ -513,7 +535,7 @@ namespace OrbitSort.Presentation
             GameObject geometry = CreateBlenderModel(
                 _centerModel,
                 "Center Hub",
-                _contentRoot,
+                _staticRoot,
                 Vector2.zero,
                 0f);
             AssignAllRenderers(geometry, _centerMaterial);
@@ -524,7 +546,7 @@ namespace OrbitSort.Presentation
             GameObject geometry = CreateBlenderModel(
                 _backdropModel,
                 "Studio Backdrop",
-                _contentRoot,
+                _staticRoot,
                 Vector2.zero,
                 0f);
             AssignAllRenderers(geometry, _backdropMaterial);
@@ -740,7 +762,8 @@ namespace OrbitSort.Presentation
             string materialName,
             Color color,
             float metallic,
-            float smoothness)
+            float smoothness,
+            bool enableInstancing = false)
         {
             Shader shader = Resources.Load<Shader>(
                 "Shaders/PrototypeSurface");
@@ -759,7 +782,7 @@ namespace OrbitSort.Presentation
             {
                 name = materialName,
                 color = color,
-                enableInstancing = true
+                enableInstancing = enableInstancing
             };
             material.SetFloat("_Metallic", metallic);
             material.SetFloat("_Smoothness", smoothness);
@@ -820,6 +843,8 @@ namespace OrbitSort.Presentation
                 _contentRoot.gameObject.SetActive(false);
                 ReleaseObject(_contentRoot.gameObject);
                 _contentRoot = null;
+                _staticRoot = null;
+                _dynamicRoot = null;
             }
         }
 

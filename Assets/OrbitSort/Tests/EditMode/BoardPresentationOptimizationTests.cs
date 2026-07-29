@@ -23,9 +23,11 @@ namespace OrbitSort.Tests.EditMode
                 view.Render(model);
 
                 Transform content = host.transform.Find("Board Content");
-                Transform innerRing = content.Find("inner Ring");
+                Transform innerRing =
+                    content.Find("Dynamic Marbles/inner Ring");
                 Transform importedRing =
-                    innerRing.Find("Blender Ring Geometry");
+                    content.Find(
+                        "Static Board Geometry/inner Ring Geometry");
 
                 BoardActionResult result =
                     model.TryRotateRing("inner", 1);
@@ -37,10 +39,11 @@ namespace OrbitSort.Tests.EditMode
                     host.transform.Find("Board Content"),
                     Is.SameAs(content));
                 Assert.That(
-                    content.Find("inner Ring"),
+                    content.Find("Dynamic Marbles/inner Ring"),
                     Is.SameAs(innerRing));
                 Assert.That(
-                    innerRing.Find("Blender Ring Geometry"),
+                    content.Find(
+                        "Static Board Geometry/inner Ring Geometry"),
                     Is.SameAs(importedRing));
             }
             finally

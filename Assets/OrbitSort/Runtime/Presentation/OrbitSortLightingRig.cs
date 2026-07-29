@@ -7,7 +7,6 @@ namespace OrbitSort.Presentation
     {
         public static void Configure(Camera camera, Transform parent)
         {
-            bool mobile = Application.isMobilePlatform;
             if (camera != null)
             {
                 camera.allowHDR = false;
@@ -20,14 +19,12 @@ namespace OrbitSort.Presentation
             if (Application.isPlaying)
             {
                 QualitySettings.pixelLightCount = 2;
-                QualitySettings.antiAliasing = mobile ? 2 : 4;
+                QualitySettings.antiAliasing = 2;
                 QualitySettings.shadows = ShadowQuality.All;
                 QualitySettings.shadowResolution =
-                    mobile
-                        ? ShadowResolution.Medium
-                        : ShadowResolution.High;
+                    ShadowResolution.Medium;
                 QualitySettings.shadowDistance = 25f;
-                QualitySettings.shadowCascades = mobile ? 0 : 2;
+                QualitySettings.shadowCascades = 0;
                 QualitySettings.shadowProjection =
                     ShadowProjection.StableFit;
                 QualitySettings.maxQueuedFrames = 1;

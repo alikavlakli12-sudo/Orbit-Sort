@@ -145,6 +145,15 @@ exporter flag:
 The matching direct-overhead Blender comparison render is generated with
 `Docs/Tools/render_topdown_blender_reference.py`.
 
+## Performance profiling
+
+Use `Orbit Sort/Profile Live Ring Rotation` to run the repeatable Play Mode
+rotation benchmark. It compares idle, continuous rotation, and snap
+phases, then writes the measurements to `Library/Profiling/`.
+
+The latest before-and-after results are documented in
+[Docs/Performance.md](Docs/Performance.md).
+
 ## License
 
 No open-source license has been granted. All rights are reserved by the project owner.
