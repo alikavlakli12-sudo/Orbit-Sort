@@ -10,6 +10,7 @@ namespace OrbitSort.Gameplay
     {
         private const float TapThresholdPixels = 26f;
         private const float DragThresholdPixels = 32f;
+        private const float MinimumRotationAngleDegrees = 3f;
 
         private LevelCatalogData _catalog;
         private BoardModel _model;
@@ -21,6 +22,10 @@ namespace OrbitSort.Gameplay
         private bool _pointerBlockedByHud;
         private Vector2 _pointerStartScreen;
         private Vector2 _pointerStartWorld;
+        private Vector2 _pointerLastWorld;
+        private float _dragAngleDegrees;
+        private float _maximumDragDistancePixels;
+        private bool _isAnimatingRing;
         private string _selectedRingId;
         private string _selectedGateId;
 
@@ -116,11 +121,15 @@ namespace OrbitSort.Gameplay
                     case TouchPhase.Began:
                         BeginPointer(touch.position);
                         break;
+                    case TouchPhase.Moved:
+                    case TouchPhase.Stationary:
+                        UpdatePointer(touch.position);
+                        break;
                     case TouchPhase.Ended:
                         EndPointer(touch.position);
                         break;
                     case TouchPhase.Canceled:
-                        CancelPointer();
+                        CancelPointerAndRestoreRing();
                         break;
                 }
 
@@ -132,6 +141,11 @@ namespace OrbitSort.Gameplay
                 BeginPointer(Input.mousePosition);
             }
 
+            if (Input.GetMouseButton(0))
+            {
+                UpdatePointer(Input.mousePosition);
+            }
+
             if (Input.GetMouseButtonUp(0))
             {
                 EndPointer(Input.mousePosition);
@@ -140,7 +154,7 @@ namespace OrbitSort.Gameplay
 
         public void Undo()
         {
-            if (_model == null)
+            if (_model == null || InputIsBusy)
             {
                 return;
             }
@@ -150,7 +164,7 @@ namespace OrbitSort.Gameplay
 
         public void RestartLevel()
         {
-            if (_model == null)
+            if (_model == null || InputIsBusy)
             {
                 return;
             }
@@ -160,7 +174,8 @@ namespace OrbitSort.Gameplay
 
         public void NextLevel()
         {
-            if (_catalog == null
+            if (InputIsBusy
+                || _catalog == null
                 || _levelIndex + 1 >= _catalog.levels.Length)
             {
                 return;
@@ -171,7 +186,7 @@ namespace OrbitSort.Gameplay
 
         public void PreviousLevel()
         {
-            if (_catalog == null || _levelIndex <= 0)
+            if (InputIsBusy || _catalog == null || _levelIndex <= 0)
             {
                 return;
             }
@@ -189,7 +204,7 @@ namespace OrbitSort.Gameplay
                 _levelIndex,
                 _catalog.levels.Length,
                 InitialInstruction(index));
-            CancelPointer();
+            ClearPointerState();
         }
 
         private string InitialInstruction(int index)
@@ -204,7 +219,9 @@ namespace OrbitSort.Gameplay
 
         private void BeginPointer(Vector2 screenPosition)
         {
-            if (_model == null || _model.Phase != BoardPhase.Playing)
+            if (InputIsBusy
+                || _model == null
+                || _model.Phase != BoardPhase.Playing)
             {
                 return;
             }
@@ -212,6 +229,9 @@ namespace OrbitSort.Gameplay
             _pointerDown = true;
             _pointerStartScreen = screenPosition;
             _pointerStartWorld = ScreenToBoardWorld(screenPosition);
+            _pointerLastWorld = _pointerStartWorld;
+            _dragAngleDegrees = 0f;
+            _maximumDragDistancePixels = 0f;
             _pointerBlockedByHud = _hud.IsPointerOverUi(screenPosition);
             _selectedRingId = null;
             _selectedGateId = null;
@@ -232,6 +252,45 @@ namespace OrbitSort.Gameplay
             _boardView.TryGetRingAtWorldPoint(
                 _pointerStartWorld,
                 out _selectedRingId);
+            if (_selectedRingId != null
+                && !_boardView.BeginRingDrag(_selectedRingId))
+            {
+                _selectedRingId = null;
+            }
+        }
+
+        private void UpdatePointer(Vector2 screenPosition)
+        {
+            if (!_pointerDown
+                || _pointerBlockedByHud
+                || _selectedRingId == null)
+            {
+                return;
+            }
+
+            _maximumDragDistancePixels = Mathf.Max(
+                _maximumDragDistancePixels,
+                Vector2.Distance(_pointerStartScreen, screenPosition));
+
+            Vector2 currentWorld = ScreenToBoardWorld(screenPosition);
+            if (_pointerLastWorld.sqrMagnitude > 0.25f
+                && currentWorld.sqrMagnitude > 0.25f)
+            {
+                float previousAngle = Mathf.Atan2(
+                    _pointerLastWorld.y,
+                    _pointerLastWorld.x) * Mathf.Rad2Deg;
+                float currentAngle = Mathf.Atan2(
+                    currentWorld.y,
+                    currentWorld.x) * Mathf.Rad2Deg;
+                _dragAngleDegrees += Mathf.DeltaAngle(
+                    previousAngle,
+                    currentAngle);
+                _boardView.PreviewRingRotation(
+                    _selectedRingId,
+                    _dragAngleDegrees);
+            }
+
+            _pointerLastWorld = currentWorld;
         }
 
         private void EndPointer(Vector2 screenPosition)
@@ -241,52 +300,60 @@ namespace OrbitSort.Gameplay
                 return;
             }
 
-            _pointerDown = false;
+            UpdatePointer(screenPosition);
             if (_pointerBlockedByHud
                 || _model == null
                 || _model.Phase != BoardPhase.Playing)
             {
-                CancelPointer();
+                CancelPointerAndRestoreRing();
                 return;
             }
 
+            _pointerDown = false;
             float dragDistance =
-                Vector2.Distance(_pointerStartScreen, screenPosition);
+                Mathf.Max(
+                    _maximumDragDistancePixels,
+                    Vector2.Distance(_pointerStartScreen, screenPosition));
             if (_selectedGateId != null
                 && dragDistance <= TapThresholdPixels)
             {
                 ApplyResult(_model.TryTransferGate(_selectedGateId));
-                CancelPointer();
+                ClearPointerState();
                 return;
             }
 
             if (_selectedRingId != null
-                && dragDistance >= DragThresholdPixels)
+                && dragDistance >= DragThresholdPixels
+                && Mathf.Abs(_dragAngleDegrees)
+                    >= MinimumRotationAngleDegrees)
             {
-                Vector2 endWorld = ScreenToBoardWorld(screenPosition);
-                float startAngle = Mathf.Atan2(
-                    _pointerStartWorld.y,
-                    _pointerStartWorld.x) * Mathf.Rad2Deg;
-                float endAngle = Mathf.Atan2(
-                    endWorld.y,
-                    endWorld.x) * Mathf.Rad2Deg;
-                float angleDelta = Mathf.DeltaAngle(
-                    startAngle,
-                    endAngle);
                 float stepAngle = _boardView.GetRingStepAngle(
                     _selectedRingId,
                     _model);
-                int steps = Mathf.RoundToInt(-angleDelta / stepAngle);
+                int steps = Mathf.RoundToInt(
+                    -_dragAngleDegrees / stepAngle);
                 if (steps == 0)
                 {
-                    steps = angleDelta < 0f ? 1 : -1;
+                    steps = _dragAngleDegrees < 0f ? 1 : -1;
                 }
 
-                ApplyResult(
-                    _model.TryRotateRing(_selectedRingId, steps));
+                string ringId = _selectedRingId;
+                BoardActionResult result =
+                    _model.TryRotateRing(ringId, steps);
+                ClearPointerState();
+                AnimateRingResult(ringId, result);
+                return;
             }
 
-            CancelPointer();
+            if (_selectedRingId != null)
+            {
+                string ringId = _selectedRingId;
+                ClearPointerState();
+                AnimateRingResult(ringId, null);
+                return;
+            }
+
+            ClearPointerState();
         }
 
         private void ApplyResult(BoardActionResult result)
@@ -297,6 +364,29 @@ namespace OrbitSort.Gameplay
             }
 
             _boardView.Render(_model);
+            RefreshHud(result);
+        }
+
+        private void AnimateRingResult(
+            string ringId,
+            BoardActionResult result)
+        {
+            _isAnimatingRing = true;
+            _boardView.AnimateRingToModel(
+                ringId,
+                _model,
+                () =>
+                {
+                    _isAnimatingRing = false;
+                    if (result != null)
+                    {
+                        RefreshHud(result);
+                    }
+                });
+        }
+
+        private void RefreshHud(BoardActionResult result)
+        {
             string message = result.Message;
             if (_model.Phase == BoardPhase.Deadlocked)
             {
@@ -326,6 +416,11 @@ namespace OrbitSort.Gameplay
 
         private void HandleKeyboardShortcuts()
         {
+            if (InputIsBusy)
+            {
+                return;
+            }
+
             if (Input.GetKeyDown(KeyCode.U))
             {
                 Undo();
@@ -355,10 +450,26 @@ namespace OrbitSort.Gameplay
             _camera.orthographicSize = Mathf.Max(7.2f, 6.5f / aspect);
         }
 
-        private void CancelPointer()
+        private bool InputIsBusy =>
+            _isAnimatingRing
+            || (_pointerDown && !_pointerBlockedByHud);
+
+        private void CancelPointerAndRestoreRing()
+        {
+            string ringId = _selectedRingId;
+            ClearPointerState();
+            if (ringId != null && _model != null)
+            {
+                AnimateRingResult(ringId, null);
+            }
+        }
+
+        private void ClearPointerState()
         {
             _pointerDown = false;
             _pointerBlockedByHud = false;
+            _dragAngleDegrees = 0f;
+            _maximumDragDistancePixels = 0f;
             _selectedRingId = null;
             _selectedGateId = null;
         }

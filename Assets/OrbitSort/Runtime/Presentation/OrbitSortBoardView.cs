@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using OrbitSort.Core;
 using UnityEngine;
@@ -9,9 +10,14 @@ namespace OrbitSort.Presentation
     {
         private const int CircleSegments = 96;
         private const float TrackHalfWidth = 0.48f;
+        private const float MinimumSnapDuration = 0.10f;
+        private const float MaximumSnapDuration = 0.24f;
 
         private readonly Dictionary<string, float> _ringRadii =
             new Dictionary<string, float>(
+                StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<string, Transform> _ringRoots =
+            new Dictionary<string, Transform>(
                 StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<string, Vector2> _gatePositions =
             new Dictionary<string, Vector2>(
@@ -31,6 +37,10 @@ namespace OrbitSort.Presentation
         private Material _centerMaterial;
         private Material _exitInteriorMaterial;
         private Material _arrowMaterial;
+        private Coroutine _ringAnimation;
+        private string _previewRingId;
+        private float _previewBaseAngle;
+        private float _previewAngle;
 
         public void Initialize()
         {
@@ -74,8 +84,10 @@ namespace OrbitSort.Presentation
 
         public void Render(BoardModel model)
         {
+            StopRingAnimation();
             ClearContent();
             _ringRadii.Clear();
+            _ringRoots.Clear();
             _gatePositions.Clear();
 
             GameObject content = new GameObject("Board Content");
@@ -88,8 +100,10 @@ namespace OrbitSort.Presentation
                 RingState ring = model.Rings[index];
                 float radius = radii[index];
                 _ringRadii[ring.Id] = radius;
-                CreateRing(ring, radius);
-                CreateMarbles(ring, radius);
+                Transform ringRoot = CreateRingRoot(ring);
+                _ringRoots[ring.Id] = ringRoot;
+                CreateRing(ring, radius, ringRoot);
+                CreateMarbles(ring, radius, ringRoot);
             }
 
             CreateCenter(radii[0]);
@@ -152,7 +166,94 @@ namespace OrbitSort.Presentation
             return 360f / model.GetRing(ringId).Capacity;
         }
 
-        private void CreateRing(RingState ring, float radius)
+        public bool BeginRingDrag(string ringId)
+        {
+            if (_ringAnimation != null
+                || !_ringRoots.TryGetValue(ringId, out Transform ringRoot))
+            {
+                return false;
+            }
+
+            _previewRingId = ringId;
+            _previewBaseAngle = SignedLocalAngle(ringRoot);
+            _previewAngle = _previewBaseAngle;
+            return true;
+        }
+
+        public void PreviewRingRotation(
+            string ringId,
+            float dragAngleDegrees)
+        {
+            if (!string.Equals(
+                    _previewRingId,
+                    ringId,
+                    StringComparison.OrdinalIgnoreCase)
+                || !_ringRoots.TryGetValue(ringId, out Transform ringRoot))
+            {
+                return;
+            }
+
+            _previewAngle = _previewBaseAngle + dragAngleDegrees;
+            SetLocalAngle(ringRoot, _previewAngle);
+        }
+
+        public void AnimateRingToModel(
+            string ringId,
+            BoardModel model,
+            Action onComplete)
+        {
+            if (!_ringRoots.TryGetValue(ringId, out Transform ringRoot))
+            {
+                Render(model);
+                onComplete?.Invoke();
+                return;
+            }
+
+            float currentAngle = string.Equals(
+                _previewRingId,
+                ringId,
+                StringComparison.OrdinalIgnoreCase)
+                ? _previewAngle
+                : SignedLocalAngle(ringRoot);
+            StopRingAnimation();
+
+            RingState ring = model.GetRing(ringId);
+            float stepAngle = 360f / ring.Capacity;
+            float modelAngle = -ring.RotationOffset * stepAngle;
+            float targetAngle = currentAngle
+                + Mathf.DeltaAngle(currentAngle, modelAngle);
+            float snapDistance =
+                Mathf.Abs(targetAngle - currentAngle);
+            float duration = Mathf.Lerp(
+                MinimumSnapDuration,
+                MaximumSnapDuration,
+                Mathf.Clamp01(snapDistance / stepAngle));
+
+            _ringAnimation = StartCoroutine(
+                AnimateRingRotation(
+                    ringRoot,
+                    currentAngle,
+                    targetAngle,
+                    duration,
+                    model,
+                    onComplete));
+        }
+
+        private Transform CreateRingRoot(RingState ring)
+        {
+            GameObject root = new GameObject($"{ring.Id} Ring");
+            root.transform.SetParent(_contentRoot, false);
+            float stepAngle = 360f / ring.Capacity;
+            SetLocalAngle(
+                root.transform,
+                -ring.RotationOffset * stepAngle);
+            return root.transform;
+        }
+
+        private void CreateRing(
+            RingState ring,
+            float radius,
+            Transform ringRoot)
         {
             Material rail = ring.GapCount == 0
                 ? _jammedMaterial
@@ -165,22 +266,28 @@ namespace OrbitSort.Presentation
                 radius - TrackHalfWidth,
                 radius + TrackHalfWidth,
                 0.34f,
-                _trackMaterial);
+                _trackMaterial,
+                ringRoot);
             CreateAnnulusObject(
                 $"{ring.Id} Inner Rail",
                 radius - TrackHalfWidth - 0.08f,
                 radius - TrackHalfWidth + 0.04f,
                 0.14f,
-                rail);
+                rail,
+                ringRoot);
             CreateAnnulusObject(
                 $"{ring.Id} Outer Rail",
                 radius + TrackHalfWidth - 0.04f,
                 radius + TrackHalfWidth + 0.08f,
                 0.14f,
-                rail);
+                rail,
+                ringRoot);
         }
 
-        private void CreateMarbles(RingState ring, float radius)
+        private void CreateMarbles(
+            RingState ring,
+            float radius,
+            Transform ringRoot)
         {
             float circumferenceSpacing =
                 2f * Mathf.PI * radius / ring.Capacity;
@@ -191,19 +298,16 @@ namespace OrbitSort.Presentation
 
             foreach (KeyValuePair<int, MarbleColor> marble in ring.Marbles)
             {
-                int worldIndex = BoardModel.Mod(
-                    marble.Key + ring.RotationOffset,
-                    ring.Capacity);
                 Vector2 point = PointOnCircle(
                     radius,
-                    worldIndex,
+                    marble.Key,
                     ring.Capacity);
 
                 GameObject sphere = GameObject.CreatePrimitive(
                     PrimitiveType.Sphere);
                 sphere.name =
                     $"{MarbleColorUtility.DisplayName(marble.Value)} Marble";
-                sphere.transform.SetParent(_contentRoot, false);
+                sphere.transform.SetParent(ringRoot, false);
                 sphere.transform.localPosition =
                     new Vector3(point.x, point.y, -0.12f);
                 sphere.transform.localScale =
@@ -345,10 +449,11 @@ namespace OrbitSort.Presentation
             float innerRadius,
             float outerRadius,
             float depth,
-            Material material)
+            Material material,
+            Transform parent)
         {
             GameObject ring = new GameObject(objectName);
-            ring.transform.SetParent(_contentRoot, false);
+            ring.transform.SetParent(parent, false);
             ring.transform.localPosition = new Vector3(0f, 0f, depth);
 
             MeshFilter filter = ring.AddComponent<MeshFilter>();
@@ -408,6 +513,65 @@ namespace OrbitSort.Presentation
             mesh.RecalculateNormals();
             mesh.RecalculateBounds();
             return mesh;
+        }
+
+        private IEnumerator AnimateRingRotation(
+            Transform ringRoot,
+            float startAngle,
+            float targetAngle,
+            float duration,
+            BoardModel model,
+            Action onComplete)
+        {
+            float elapsed = 0f;
+            while (elapsed < duration && ringRoot != null)
+            {
+                elapsed += Time.unscaledDeltaTime;
+                float progress = Mathf.Clamp01(elapsed / duration);
+                float easedProgress =
+                    1f - Mathf.Pow(1f - progress, 3f);
+                SetLocalAngle(
+                    ringRoot,
+                    Mathf.LerpUnclamped(
+                        startAngle,
+                        targetAngle,
+                        easedProgress));
+                yield return null;
+            }
+
+            if (ringRoot != null)
+            {
+                SetLocalAngle(ringRoot, targetAngle);
+            }
+
+            _ringAnimation = null;
+            _previewRingId = null;
+            Render(model);
+            onComplete?.Invoke();
+        }
+
+        private void StopRingAnimation()
+        {
+            if (_ringAnimation != null)
+            {
+                StopCoroutine(_ringAnimation);
+                _ringAnimation = null;
+            }
+
+            _previewRingId = null;
+        }
+
+        private static float SignedLocalAngle(Transform target)
+        {
+            return Mathf.DeltaAngle(0f, target.localEulerAngles.z);
+        }
+
+        private static void SetLocalAngle(
+            Transform target,
+            float angleDegrees)
+        {
+            target.localRotation =
+                Quaternion.Euler(0f, 0f, angleDegrees);
         }
 
         private Material CreateMaterial(string materialName, Color color)
@@ -476,6 +640,7 @@ namespace OrbitSort.Presentation
 
         private void ClearContent()
         {
+            _previewRingId = null;
             if (_contentRoot != null)
             {
                 Destroy(_contentRoot.gameObject);
@@ -496,6 +661,7 @@ namespace OrbitSort.Presentation
 
         private void OnDestroy()
         {
+            StopRingAnimation();
             foreach (UnityEngine.Object asset in _generatedAssets)
             {
                 if (asset != null)
