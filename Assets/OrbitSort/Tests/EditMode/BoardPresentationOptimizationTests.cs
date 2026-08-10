@@ -102,5 +102,38 @@ namespace OrbitSort.Tests.EditMode
                 Object.DestroyImmediate(host);
             }
         }
+
+        [Test]
+        public void ResolvedExitRemainsAvailableForReceiverAnimation()
+        {
+            GameObject host = new GameObject("Receiver Animation Test");
+            try
+            {
+                LevelCatalogData catalog =
+                    LevelCatalogLoader.LoadFromResources();
+                BoardModel model = new BoardModel(catalog.levels[0]);
+                OrbitSortBoardView view =
+                    host.AddComponent<OrbitSortBoardView>();
+                view.Initialize();
+                view.Render(model);
+
+                Assert.That(
+                    view.GetPendingExitAnimationCount(model),
+                    Is.Zero);
+
+                BoardActionResult rotation =
+                    model.TryRotateRing("outer", -4);
+
+                Assert.That(rotation.Succeeded, Is.True);
+                Assert.That(rotation.ExitedMarbles, Is.EqualTo(1));
+                Assert.That(
+                    view.GetPendingExitAnimationCount(model),
+                    Is.EqualTo(1));
+            }
+            finally
+            {
+                Object.DestroyImmediate(host);
+            }
+        }
     }
 }

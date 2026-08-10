@@ -37,6 +37,9 @@ A ring needs at least one marble-sized gap to rotate. A completely full ring is 
 - Prototype exits connect to the outer ring.
 - Each exit accepts one color.
 - A correctly aligned marble exits automatically after the current action settles.
+- The marble visibly accelerates into the receiver opening and shrinks inside it.
+- Colored angular fragments then launch from the far side of the receiver,
+  making it read as a marble shredder rather than an instant disappearance.
 - Every marble removed from the outer ring creates new usable space.
 
 ## Win and lose

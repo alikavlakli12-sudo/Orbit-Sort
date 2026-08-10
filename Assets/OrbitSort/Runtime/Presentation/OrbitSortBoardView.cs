@@ -48,6 +48,9 @@ namespace OrbitSort.Presentation
         private readonly Dictionary<string, Vector2> _gatePositions =
             new Dictionary<string, Vector2>(
                 StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<string, Vector2> _exitPositions =
+            new Dictionary<string, Vector2>(
+                StringComparer.OrdinalIgnoreCase);
         private readonly List<int> _marbleRemovalBuffer =
             new List<int>();
         private readonly List<UnityEngine.Object> _generatedAssets =
@@ -64,6 +67,7 @@ namespace OrbitSort.Presentation
         private GameObject _centerModel;
         private GameObject _marbleModel;
         private GameObject _backdropModel;
+        private ReceiverShredEffect _receiverShredEffect;
         private Material _trackMaterial;
         private Material _railMaterial;
         private Material _portalMaterial;
@@ -76,6 +80,7 @@ namespace OrbitSort.Presentation
                 new Dictionary<MarbleColor, Material>();
         private Coroutine _ringAnimation;
         private Coroutine _transferAnimation;
+        private Coroutine _exitAnimation;
         private string _previewRingId;
         private float _previewBaseAngle;
         private float _previewTargetAngle;
@@ -83,6 +88,14 @@ namespace OrbitSort.Presentation
 
         public void Initialize()
         {
+            _receiverShredEffect =
+                gameObject.GetComponent<ReceiverShredEffect>();
+            if (_receiverShredEffect == null)
+            {
+                _receiverShredEffect =
+                    gameObject.AddComponent<ReceiverShredEffect>();
+            }
+
             _ringModels = new[]
             {
                 LoadModel("RingInner"),
@@ -177,11 +190,13 @@ namespace OrbitSort.Presentation
         {
             StopRingAnimation();
             StopTransferAnimation();
+            StopExitAnimation();
             ClearContent();
             _ringRadii.Clear();
             _ringRoots.Clear();
             _marbleVisuals.Clear();
             _gatePositions.Clear();
+            _exitPositions.Clear();
 
             GameObject content = new GameObject("Board Content");
             content.transform.SetParent(transform, false);
@@ -196,6 +211,10 @@ namespace OrbitSort.Presentation
                 new GameObject("Dynamic Marbles");
             dynamicMarbles.transform.SetParent(_contentRoot, false);
             _dynamicRoot = dynamicMarbles.transform;
+            _receiverShredEffect.Configure(
+                _dynamicRoot,
+                model.Exits.Count,
+                _marbleMaterials);
 
             CreateBackdrop();
 
@@ -339,6 +358,26 @@ namespace OrbitSort.Presentation
             return true;
         }
 
+        public int GetPendingExitAnimationCount(BoardModel model)
+        {
+            int count = 0;
+            foreach (ExitState exit in model.Exits)
+            {
+                if (TryGetPendingExitVisual(
+                        model,
+                        exit,
+                        out _,
+                        out _,
+                        out _,
+                        out _))
+                {
+                    count++;
+                }
+            }
+
+            return count;
+        }
+
         public float GetRingStepAngle(string ringId, BoardModel model)
         {
             return 360f / model.GetRing(ringId).Capacity;
@@ -347,6 +386,8 @@ namespace OrbitSort.Presentation
         public bool BeginRingDrag(string ringId)
         {
             if (_ringAnimation != null
+                || _transferAnimation != null
+                || _exitAnimation != null
                 || !_ringRoots.TryGetValue(ringId, out Transform ringRoot))
             {
                 return false;
@@ -410,8 +451,7 @@ namespace OrbitSort.Presentation
             if (snapDistance <= 0.01f)
             {
                 SetLocalAngle(ringRoot, targetAngle);
-                SynchronizeModel(model);
-                onComplete?.Invoke();
+                CompleteActionVisuals(model, onComplete);
                 return;
             }
 
@@ -432,6 +472,7 @@ namespace OrbitSort.Presentation
         {
             if (_transferAnimation != null
                 || _ringAnimation != null
+                || _exitAnimation != null
                 || _dynamicRoot == null
                 || !_gatePositions.TryGetValue(
                     gateId,
@@ -649,6 +690,7 @@ namespace OrbitSort.Presentation
             float angle = AngleForIndex(exit.RingIndex, ring.Capacity);
             float radius = ReceiverRadius;
             Vector2 point = PointOnCircle(radius, angle);
+            _exitPositions[exit.Id] = point;
 
             GameObject geometry = CreateBlenderModel(
                 _receiverModel,
@@ -853,8 +895,8 @@ namespace OrbitSort.Presentation
                 destinationLocalIndex,
                 destinationRoot,
                 fullScale,
-                model);
-            onComplete?.Invoke();
+                model,
+                onComplete);
         }
 
         private void CompleteGateTransfer(
@@ -865,19 +907,14 @@ namespace OrbitSort.Presentation
             int destinationLocalIndex,
             Transform destinationRoot,
             Vector3 fullScale,
-            BoardModel model)
+            BoardModel model,
+            Action onComplete)
         {
             _marbleVisuals[source.Id].Remove(sourceLocalIndex);
 
-            bool marbleLanded =
-                destination.Marbles.TryGetValue(
-                    destinationLocalIndex,
-                    out MarbleColor destinationColor)
-                && destinationColor == visual.Color;
             Dictionary<int, MarbleVisual> destinationVisuals =
                 _marbleVisuals[destination.Id];
-            if (marbleLanded
-                && !destinationVisuals.ContainsKey(destinationLocalIndex)
+            if (!destinationVisuals.ContainsKey(destinationLocalIndex)
                 && visual.Placement != null)
             {
                 Transform marble = visual.Placement.transform;
@@ -899,7 +936,107 @@ namespace OrbitSort.Presentation
                 ReleaseObject(visual.Placement);
             }
 
-            SynchronizeModel(model);
+            CompleteActionVisuals(model, onComplete);
+        }
+
+        private void CompleteActionVisuals(
+            BoardModel model,
+            Action onComplete)
+        {
+            List<ReceiverShredTarget> resolvedExits =
+                CollectResolvedExitVisuals(model);
+            if (resolvedExits.Count == 0)
+            {
+                SynchronizeModel(model);
+                onComplete?.Invoke();
+                return;
+            }
+
+            _exitAnimation = StartCoroutine(
+                _receiverShredEffect.Animate(
+                    resolvedExits,
+                    () =>
+                    {
+                        _exitAnimation = null;
+                        SynchronizeModel(model);
+                        onComplete?.Invoke();
+                    }));
+        }
+
+        private List<ReceiverShredTarget> CollectResolvedExitVisuals(
+            BoardModel model)
+        {
+            var resolved = new List<ReceiverShredTarget>(model.Exits.Count);
+            foreach (ExitState exit in model.Exits)
+            {
+                if (!TryGetPendingExitVisual(
+                        model,
+                        exit,
+                        out RingState ring,
+                        out int localIndex,
+                        out MarbleVisual visual,
+                        out Vector2 receiverLocalPosition))
+                {
+                    continue;
+                }
+
+                Transform marble = visual.Placement.transform;
+                Vector3 startWorldPosition = marble.position;
+                Vector3 receiverWorldPosition =
+                    _contentRoot.TransformPoint(
+                        new Vector3(
+                            receiverLocalPosition.x,
+                            receiverLocalPosition.y,
+                            0f));
+                receiverWorldPosition.z = startWorldPosition.z;
+                Vector3 outwardWorldDirection =
+                    _contentRoot.TransformDirection(
+                        new Vector3(
+                            receiverLocalPosition.x,
+                            receiverLocalPosition.y,
+                            0f)).normalized;
+
+                marble.SetParent(_dynamicRoot, true);
+                Vector3 fullScale = marble.localScale;
+                _marbleVisuals[ring.Id].Remove(localIndex);
+                resolved.Add(
+                    new ReceiverShredTarget(
+                        visual.Placement,
+                        visual.Color,
+                        startWorldPosition,
+                        receiverWorldPosition,
+                        outwardWorldDirection,
+                        fullScale));
+            }
+
+            return resolved;
+        }
+
+        private bool TryGetPendingExitVisual(
+            BoardModel model,
+            ExitState exit,
+            out RingState ring,
+            out int localIndex,
+            out MarbleVisual visual,
+            out Vector2 receiverLocalPosition)
+        {
+            ring = model.GetRing(exit.Ring);
+            localIndex = BoardModel.Mod(
+                exit.RingIndex - ring.RotationOffset,
+                ring.Capacity);
+            visual = null;
+            receiverLocalPosition = Vector2.zero;
+
+            return !ring.Marbles.ContainsKey(localIndex)
+                   && _exitPositions.TryGetValue(
+                       exit.Id,
+                       out receiverLocalPosition)
+                   && _marbleVisuals.TryGetValue(
+                       ring.Id,
+                       out Dictionary<int, MarbleVisual> visuals)
+                   && visuals.TryGetValue(localIndex, out visual)
+                   && visual.Color == exit.Color
+                   && visual.Placement != null;
         }
 
         private IEnumerator AnimateRingRotation(
@@ -936,8 +1073,7 @@ namespace OrbitSort.Presentation
 
             _ringAnimation = null;
             _previewRingId = null;
-            SynchronizeModel(model);
-            onComplete?.Invoke();
+            CompleteActionVisuals(model, onComplete);
         }
 
         private static float SmootherStep(float value)
@@ -997,6 +1133,17 @@ namespace OrbitSort.Presentation
 
             StopCoroutine(_transferAnimation);
             _transferAnimation = null;
+        }
+
+        private void StopExitAnimation()
+        {
+            if (_exitAnimation == null)
+            {
+                return;
+            }
+
+            StopCoroutine(_exitAnimation);
+            _exitAnimation = null;
         }
 
         private static float SignedLocalAngle(Transform target)
@@ -1119,6 +1266,7 @@ namespace OrbitSort.Presentation
         {
             StopRingAnimation();
             StopTransferAnimation();
+            StopExitAnimation();
             foreach (UnityEngine.Object asset in _generatedAssets)
             {
                 if (asset != null)

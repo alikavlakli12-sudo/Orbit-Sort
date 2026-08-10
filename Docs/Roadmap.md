@@ -25,13 +25,13 @@ Status: complete in the playable greybox.
 
 ## Milestone 3: Continuous-track prototype
 
-Status: playable greybox complete; presentation animation remains.
+Status: complete for the current playable prototype.
 
 - Three smooth ring channels
 - Hidden-position-to-angle mapping
 - Swipe rotation
-- Gate transfer presentation
-- Automatic exit behavior
+- Gravity-style gate transfer presentation
+- Animated receiver intake and shred burst
 - Jam feedback and lose screen
 
 ## Milestone 4: Level production
