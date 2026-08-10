@@ -1002,6 +1002,8 @@ namespace OrbitSort.Presentation
                 resolved.Add(
                     new ReceiverShredTarget(
                         visual.Placement,
+                        visual.Placement.GetComponentsInChildren<Renderer>(
+                            true),
                         visual.Color,
                         startWorldPosition,
                         receiverWorldPosition,

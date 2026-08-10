@@ -32,8 +32,9 @@ Playable prototype:
   mobile frame pacing.
 - Swipe ring rotation and directional marble-to-portal transfers.
 - Gravity-style portal animation with continuous shrink, launch, and regrowth.
-- Receiver intake followed by a colored shred-fragment burst for every
-  sorted marble.
+- Full-size receiver intake with a soft selection halo, magenta gravity
+  streaks, progressive masking inside the rim, a mouth flash, and a dense
+  directional stream of colored shred fragments for every sorted marble.
 - Automatic matching exits, win state, restart, and undo.
 - Search-aware deadlock detection with a visible lose screen.
 - Local, Unity, and continuous-integration validation.
