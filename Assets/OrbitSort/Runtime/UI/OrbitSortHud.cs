@@ -30,8 +30,10 @@ namespace OrbitSort.UI
         private Texture2D _whiteTexture;
         private Texture2D _roundedTexture;
         private Texture2D _levelIndicatorTexture;
+        private Texture2D _levelTextCoverTexture;
         private Texture2D _settingsButtonTexture;
         private GUIStyle _roundedStyle;
+        private GUIStyle _levelIndicatorTextStyle;
         private GUIStyle _overlayTitleStyle;
         private GUIStyle _overlayBodyStyle;
         private GUIStyle _primaryButtonStyle;
@@ -53,6 +55,7 @@ namespace OrbitSort.UI
                 64,
                 18f);
             _levelIndicatorTexture = LoadUiTexture("UI/LevelIndicator");
+            _levelTextCoverTexture = CreateLevelTextCoverTexture();
             _settingsButtonTexture = LoadUiTexture("UI/SettingsButton");
         }
 
@@ -112,11 +115,30 @@ namespace OrbitSort.UI
 
         private void DrawTopControls()
         {
+            Rect levelGraphicRect = AspectFitRect(
+                _levelRect,
+                _levelIndicatorTexture.width,
+                _levelIndicatorTexture.height);
             GUI.DrawTexture(
                 _levelRect,
                 _levelIndicatorTexture,
                 ScaleMode.ScaleToFit,
                 true);
+            GUI.DrawTexture(
+                new Rect(
+                    levelGraphicRect.x
+                        + levelGraphicRect.width * (220f / 938f),
+                    levelGraphicRect.y
+                        + levelGraphicRect.height * (130f / 384f),
+                    levelGraphicRect.width * (500f / 938f),
+                    levelGraphicRect.height * (125f / 384f)),
+                _levelTextCoverTexture,
+                ScaleMode.StretchToFill,
+                true);
+            GUI.Label(
+                levelGraphicRect,
+                $"LEVEL {_levelIndex + 1}",
+                _levelIndicatorTextStyle);
 
             GUI.DrawTexture(
                 _settingsRect,
@@ -423,6 +445,11 @@ namespace OrbitSort.UI
                 normal = { background = _roundedTexture },
                 border = new RectOffset(22, 22, 22, 22)
             };
+            _levelIndicatorTextStyle = CreateStyle(
+                26,
+                FontStyle.Bold,
+                TextAnchor.MiddleCenter,
+                DeepIndigo);
             _overlayTitleStyle = CreateStyle(
                 34,
                 FontStyle.Bold,
@@ -491,6 +518,55 @@ namespace OrbitSort.UI
             return texture;
         }
 
+        private static Texture2D CreateLevelTextCoverTexture()
+        {
+            var texture = new Texture2D(
+                2,
+                2,
+                TextureFormat.RGBA32,
+                false)
+            {
+                name = "Orbit Sort Level Text Cover",
+                hideFlags = HideFlags.HideAndDontSave,
+                filterMode = FilterMode.Bilinear,
+                wrapMode = TextureWrapMode.Clamp
+            };
+            texture.SetPixels32(new[]
+            {
+                new Color32(240, 239, 253, 255),
+                new Color32(237, 236, 251, 255),
+                new Color32(241, 240, 253, 255),
+                new Color32(240, 239, 253, 255)
+            });
+            texture.Apply(false, true);
+            return texture;
+        }
+
+        private static Rect AspectFitRect(
+            Rect bounds,
+            float textureWidth,
+            float textureHeight)
+        {
+            float textureAspect = textureWidth / textureHeight;
+            float boundsAspect = bounds.width / bounds.height;
+            if (boundsAspect > textureAspect)
+            {
+                float width = bounds.height * textureAspect;
+                return new Rect(
+                    bounds.center.x - width * 0.5f,
+                    bounds.y,
+                    width,
+                    bounds.height);
+            }
+
+            float height = bounds.width / textureAspect;
+            return new Rect(
+                bounds.x,
+                bounds.center.y - height * 0.5f,
+                bounds.width,
+                height);
+        }
+
         private static Texture2D CreateRoundedRectangleTexture(
             string textureName,
             int width,
@@ -555,6 +631,7 @@ namespace OrbitSort.UI
         {
             ReleaseTexture(_whiteTexture);
             ReleaseTexture(_roundedTexture);
+            ReleaseTexture(_levelTextCoverTexture);
         }
 
         private static void ReleaseTexture(Texture2D texture)
