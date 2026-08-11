@@ -35,48 +35,48 @@ namespace OrbitSort.Presentation
 
             RenderSettings.ambientMode = AmbientMode.Trilight;
             RenderSettings.ambientSkyColor =
-                new Color(0.18f, 0.22f, 0.44f);
+                new Color(0.48f, 0.56f, 0.78f);
             RenderSettings.ambientEquatorColor =
-                new Color(0.09f, 0.08f, 0.24f);
+                new Color(0.34f, 0.34f, 0.54f);
             RenderSettings.ambientGroundColor =
-                new Color(0.025f, 0.018f, 0.075f);
-            RenderSettings.ambientIntensity = 0.62f;
-            RenderSettings.reflectionIntensity = 0.62f;
+                new Color(0.24f, 0.21f, 0.42f);
+            RenderSettings.ambientIntensity = 0.78f;
+            RenderSettings.reflectionIntensity = 0.54f;
             RenderSettings.fog = false;
 
             CreateDirectional(
                 parent,
                 "Orbit Sort Warm Key",
                 new Color(1.0f, 0.82f, 0.64f),
-                0.60f,
+                0.48f,
                 new Vector3(20f, -30f, 0f),
                 true);
             CreateDirectional(
                 parent,
                 "Orbit Sort Cool Key Fill",
                 new Color(0.58f, 0.66f, 1.0f),
-                0.38f,
+                0.25f,
                 new Vector3(-18f, 35f, 0f),
                 false);
             CreatePoint(
                 parent,
                 "Orbit Sort Cool Fill",
                 new Color(0.34f, 0.50f, 1.0f),
-                1.40f,
+                0.90f,
                 20f,
                 new Vector3(-5.5f, 1.5f, -6.0f));
             CreatePoint(
                 parent,
                 "Orbit Sort Warm Fill",
                 new Color(1.0f, 0.48f, 0.23f),
-                0.90f,
+                0.55f,
                 22f,
                 new Vector3(5.0f, -4.0f, -7.0f));
             CreatePoint(
                 parent,
                 "Orbit Sort Violet Rim",
                 new Color(0.48f, 0.34f, 1.0f),
-                0.90f,
+                0.55f,
                 20f,
                 new Vector3(0.0f, 6.0f, -7.0f));
         }
@@ -96,7 +96,7 @@ namespace OrbitSort.Presentation
             light.renderMode = LightRenderMode.ForcePixel;
             light.shadows =
                 castShadows ? LightShadows.Soft : LightShadows.None;
-            light.shadowStrength = 0.58f;
+            light.shadowStrength = 0.32f;
             light.shadowBias = 0.035f;
             light.shadowNormalBias = 0.22f;
             light.shadowNearPlane = 0.1f;

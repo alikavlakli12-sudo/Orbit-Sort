@@ -142,11 +142,7 @@ namespace OrbitSort.Presentation
                 new Color(0.92f, 0.92f, 0.96f),
                 0.00f,
                 0.68f);
-            _backdropMaterial = CreateMaterial(
-                "Studio Backdrop",
-                new Color(0.010f, 0.014f, 0.085f),
-                0.00f,
-                0.30f);
+            _backdropMaterial = CreateBackdropMaterial();
 
             _marbleMaterials[MarbleColor.Blue] =
                 CreateMaterial(
@@ -1214,6 +1210,39 @@ namespace OrbitSort.Presentation
             material.SetFloat("_Metallic", metallic);
             material.SetFloat("_Smoothness", smoothness);
 
+            _generatedAssets.Add(material);
+            return material;
+        }
+
+        private Material CreateBackdropMaterial()
+        {
+            Shader shader = Resources.Load<Shader>(
+                "Shaders/PremiumBackdrop");
+            if (shader == null)
+            {
+                shader = Shader.Find("OrbitSort/PremiumBackdrop");
+            }
+
+            if (shader == null)
+            {
+                throw new InvalidOperationException(
+                    "Orbit Sort premium backdrop shader could not be loaded.");
+            }
+
+            var material = new Material(shader)
+            {
+                name = "Premium Periwinkle Backdrop"
+            };
+            material.SetColor(
+                "_TopColor",
+                new Color(0.72f, 0.80f, 1.00f));
+            material.SetColor(
+                "_BottomColor",
+                new Color(0.62f, 0.55f, 0.91f));
+            material.SetColor(
+                "_CenterColor",
+                new Color(0.91f, 0.86f, 1.00f));
+            material.SetFloat("_Smoothness", 0.18f);
             _generatedAssets.Add(material);
             return material;
         }

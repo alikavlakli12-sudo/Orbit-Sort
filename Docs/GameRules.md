@@ -9,8 +9,8 @@ Move every marble through the concentric rings and into the matching color exit.
 - Swipe a ring to rotate its marble chain around the track.
 - Press an aligned marble and swipe it toward its transfer portal.
 - A marble aligned with its matching exit leaves automatically.
-- Use Undo to restore the state before the previous completed action.
-- Use Retry to reload the current level.
+- Open the top-right settings button to resume, undo the previous completed
+  action, or restart the current level.
 
 The greybox also supports `U` for undo, `R` for retry, and the left and
 right arrow keys for level switching while testing in the Unity editor.
@@ -60,7 +60,8 @@ RINGS JAMMED
 UNDO    RETRY
 ```
 
-Undo remains available on the lose screen when a previous state exists.
+Undo remains available in settings and on the lose screen when a previous
+state exists.
 
 ## Feedback requirements
 

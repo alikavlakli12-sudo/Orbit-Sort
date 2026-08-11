@@ -24,6 +24,10 @@ Playable prototype:
 - Unity project pinned to `6000.4.0f1`.
 - Five JSON-authored prototype levels: two two-ring boards followed by three
   three-ring boards.
+- Minimal premium gameplay HUD with a centered level pill, an aligned settings
+  button, and an intentionally empty lower screen.
+- Light periwinkle-to-lavender shadow-receiving backdrop with softer board
+  lighting.
 - Three Blender-authored concentric ring assets with visible gaps between them.
 - One or two rounded, arrow-marked transfer portals, matching the active ring
   count.

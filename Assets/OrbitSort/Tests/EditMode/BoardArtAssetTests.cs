@@ -9,6 +9,17 @@ namespace OrbitSort.Tests.EditMode
             Quaternion.AngleAxis(180f, Vector3.up)
             * Quaternion.AngleAxis(90f, Vector3.right);
 
+        [TestCase("PrototypeSurface")]
+        [TestCase("AdditiveGlow")]
+        [TestCase("PremiumBackdrop")]
+        public void RuntimeShaderIsAvailable(string shaderName)
+        {
+            Shader shader = Resources.Load<Shader>(
+                $"Shaders/{shaderName}");
+
+            Assert.That(shader, Is.Not.Null);
+        }
+
         [TestCase("RingInner", 4)]
         [TestCase("RingMiddle", 4)]
         [TestCase("RingOuter", 4)]

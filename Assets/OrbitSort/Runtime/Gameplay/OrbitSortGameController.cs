@@ -81,7 +81,7 @@ namespace OrbitSort.Gameplay
             _camera.transform.position = new Vector3(0f, 0f, -20f);
             _camera.transform.rotation = Quaternion.identity;
             _camera.clearFlags = CameraClearFlags.SolidColor;
-            _camera.backgroundColor = new Color(0.055f, 0.035f, 0.14f);
+            _camera.backgroundColor = new Color(0.72f, 0.80f, 1.00f);
             _camera.nearClipPlane = 0.1f;
             _camera.farClipPlane = 100f;
             UpdateCameraSize();
@@ -196,27 +196,8 @@ namespace OrbitSort.Gameplay
             _hud.Refresh(
                 _model,
                 _levelIndex,
-                _catalog.levels.Length,
-                InitialInstruction(index));
+                _catalog.levels.Length);
             ClearPointerState();
-        }
-
-        private string InitialInstruction(int index)
-        {
-            if (index == 0)
-            {
-                return "Rotate either ring, then swipe an aligned marble "
-                       + "outward through the portal.";
-            }
-
-            if (index == 1)
-            {
-                return "Use the single portal to feed the outer ring "
-                       + "without filling its final gap.";
-            }
-
-            return "Two portals now connect all three rings. Keep an open "
-                   + "route to the receivers.";
         }
 
         private void BeginPointer(Vector2 screenPosition)
@@ -359,10 +340,7 @@ namespace OrbitSort.Gameplay
                 }
                 else
                 {
-                    RefreshHud(
-                        BoardActionResult.Failure(
-                            "Swipe the aligned marble toward its portal.",
-                            _model.Phase));
+                    RefreshHud();
                 }
 
                 return;
@@ -408,7 +386,7 @@ namespace OrbitSort.Gameplay
             BoardActionResult result = _model.TryTransferGate(gateId);
             if (!result.Succeeded)
             {
-                RefreshHud(result);
+                RefreshHud();
                 return;
             }
 
@@ -419,7 +397,7 @@ namespace OrbitSort.Gameplay
                     () =>
                     {
                         _isAnimatingTransfer = false;
-                        RefreshHud(result);
+                        RefreshHud();
                     }))
             {
                 return;
@@ -437,7 +415,7 @@ namespace OrbitSort.Gameplay
             }
 
             _boardView.SynchronizeModel(_model);
-            RefreshHud(result);
+            RefreshHud();
         }
 
         private void AnimateRingResult(
@@ -453,28 +431,17 @@ namespace OrbitSort.Gameplay
                     _isAnimatingRing = false;
                     if (result != null)
                     {
-                        RefreshHud(result);
+                        RefreshHud();
                     }
                 });
         }
 
-        private void RefreshHud(BoardActionResult result)
+        private void RefreshHud()
         {
-            string message = result.Message;
-            if (_model.Phase == BoardPhase.Deadlocked)
-            {
-                message = "No productive route remains. Undo or retry.";
-            }
-            else if (_model.Phase == BoardPhase.Won)
-            {
-                message = "All marbles sorted.";
-            }
-
             _hud.Refresh(
                 _model,
                 _levelIndex,
-                _catalog.levels.Length,
-                message);
+                _catalog.levels.Length);
         }
 
         private Vector2 ScreenToBoardWorld(Vector2 screenPosition)

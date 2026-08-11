@@ -6,78 +6,73 @@ namespace OrbitSort.UI
 {
     public sealed class OrbitSortHud : MonoBehaviour
     {
-        private static readonly Color PanelColor =
-            new Color(0.08f, 0.06f, 0.18f, 0.94f);
-        private static readonly Color PanelSoftColor =
-            new Color(0.13f, 0.10f, 0.27f, 0.92f);
-        private static readonly Color AccentColor =
-            new Color(1.00f, 0.69f, 0.10f, 1f);
-        private static readonly Color ButtonColor =
-            new Color(0.20f, 0.15f, 0.42f, 1f);
-        private static readonly Color ButtonDisabledColor =
-            new Color(0.13f, 0.11f, 0.21f, 1f);
+        private static readonly Color DeepIndigo =
+            new Color(0.16f, 0.19f, 0.38f, 1f);
+        private static readonly Color FrostedWhite =
+            new Color(1f, 1f, 1f, 0.78f);
+        private static readonly Color CardWhite =
+            new Color(0.97f, 0.97f, 1f, 0.98f);
+        private static readonly Color SecondaryButton =
+            new Color(0.82f, 0.84f, 0.94f, 1f);
+        private static readonly Color DisabledButton =
+            new Color(0.80f, 0.81f, 0.87f, 0.72f);
+        private static readonly Color Scrim =
+            new Color(0.10f, 0.12f, 0.28f, 0.34f);
         private static readonly Color DangerColor =
-            new Color(0.92f, 0.18f, 0.26f, 1f);
+            new Color(0.88f, 0.20f, 0.29f, 1f);
         private static readonly Color SuccessColor =
-            new Color(0.20f, 0.78f, 0.48f, 1f);
+            new Color(0.18f, 0.68f, 0.47f, 1f);
 
         private OrbitSortGameController _controller;
         private BoardModel _model;
-        private string _levelLabel = "ORBIT SORT";
-        private string _message =
-            "Swipe a ring. Swipe an aligned marble toward its portal.";
+        private string _levelLabel = "LEVEL 1";
         private string _fatalMessage;
         private int _levelIndex;
         private int _levelCount;
+        private bool _settingsOpen;
         private Texture2D _whiteTexture;
-        private GUIStyle _titleStyle;
-        private GUIStyle _labelStyle;
-        private GUIStyle _messageStyle;
-        private GUIStyle _buttonStyle;
+        private Texture2D _roundedTexture;
+        private Texture2D _gearTexture;
+        private GUIStyle _roundedStyle;
+        private GUIStyle _levelStyle;
         private GUIStyle _overlayTitleStyle;
         private GUIStyle _overlayBodyStyle;
-        private Rect _headerRect;
-        private Rect _messageRect;
-        private Rect _buttonBarRect;
+        private GUIStyle _primaryButtonStyle;
+        private GUIStyle _secondaryButtonStyle;
+        private GUIStyle _transparentButtonStyle;
+        private Rect _levelRect;
+        private Rect _settingsRect;
         private Rect _overlayRect;
 
         public void Initialize(OrbitSortGameController controller)
         {
             _controller = controller;
-            _whiteTexture = new Texture2D(1, 1, TextureFormat.RGBA32, false)
-            {
-                name = "Orbit Sort HUD Pixel",
-                hideFlags = HideFlags.HideAndDontSave
-            };
-            _whiteTexture.SetPixel(0, 0, Color.white);
-            _whiteTexture.Apply();
+            _whiteTexture = CreateSolidTexture(
+                "Orbit Sort HUD Pixel",
+                Color.white);
+            _roundedTexture = CreateRoundedTexture();
+            _gearTexture = CreateGearTexture();
         }
 
         public void Refresh(
             BoardModel model,
             int levelIndex,
-            int levelCount,
-            string message)
+            int levelCount)
         {
             _model = model;
             _levelIndex = levelIndex;
             _levelCount = levelCount;
             _levelLabel = model == null
                 ? "ORBIT SORT"
-                : $"LEVEL {levelIndex + 1} / {levelCount}  ·  "
-                  + model.DisplayName.ToUpperInvariant();
-
-            if (!string.IsNullOrWhiteSpace(message))
-            {
-                _message = message;
-            }
-
+                : $"LEVEL {levelIndex + 1}";
             _fatalMessage = null;
+            _settingsOpen = false;
         }
 
         public void ShowFatalError(string message)
         {
             _fatalMessage = message;
+            _settingsOpen = false;
         }
 
         public bool IsPointerOverUi(Vector2 screenPosition)
@@ -86,14 +81,12 @@ namespace OrbitSort.UI
             Vector2 guiPoint = new Vector2(
                 screenPosition.x,
                 Screen.height - screenPosition.y);
-            return _headerRect.Contains(guiPoint)
-                   || _messageRect.Contains(guiPoint)
-                   || _buttonBarRect.Contains(guiPoint)
+            return _levelRect.Contains(guiPoint)
+                   || _settingsRect.Contains(guiPoint)
+                   || _settingsOpen
                    || (_model != null
-                       && _model.Phase != BoardPhase.Playing
-                       && _overlayRect.Contains(guiPoint))
-                   || (!string.IsNullOrWhiteSpace(_fatalMessage)
-                       && _overlayRect.Contains(guiPoint));
+                       && _model.Phase != BoardPhase.Playing)
+                   || !string.IsNullOrWhiteSpace(_fatalMessage);
         }
 
         private void OnGUI()
@@ -101,40 +94,15 @@ namespace OrbitSort.UI
             EnsureStyles();
             RecalculateLayout();
 
-            DrawPanel(_headerRect, PanelColor);
-            DrawPanel(
-                new Rect(
-                    _headerRect.x,
-                    _headerRect.y,
-                    6f,
-                    _headerRect.height),
-                AccentColor);
-            GUI.Label(_headerRect, _levelLabel, _titleStyle);
-
-            if (_model != null)
-            {
-                Rect remainingRect = new Rect(
-                    _headerRect.xMax - 142f,
-                    _headerRect.y + 13f,
-                    126f,
-                    _headerRect.height - 26f);
-                DrawPanel(remainingRect, PanelSoftColor);
-                GUI.Label(
-                    remainingRect,
-                    $"{_model.RemainingMarbles} MARBLES",
-                    _labelStyle);
-            }
-
-            DrawLevelProgress();
-
-            DrawPanel(_messageRect, PanelColor);
-            GUI.Label(_messageRect, _message, _messageStyle);
-
-            DrawControls();
+            DrawTopControls();
 
             if (!string.IsNullOrWhiteSpace(_fatalMessage))
             {
                 DrawFatalOverlay();
+            }
+            else if (_settingsOpen)
+            {
+                DrawSettingsOverlay();
             }
             else if (_model != null
                      && _model.Phase != BoardPhase.Playing)
@@ -143,131 +111,142 @@ namespace OrbitSort.UI
             }
         }
 
-        private void DrawControls()
+        private void DrawTopControls()
         {
-            DrawPanel(_buttonBarRect, PanelColor);
-            float spacing = 10f;
-            float width =
-                (_buttonBarRect.width - spacing * 5f) / 4f;
-            float height = _buttonBarRect.height - spacing * 2f;
-            float x = _buttonBarRect.x + spacing;
-            float y = _buttonBarRect.y + spacing;
+            DrawRoundedPanel(_levelRect, FrostedWhite);
+            GUI.Label(_levelRect, _levelLabel, _levelStyle);
 
-            bool canUndo = _model != null && _model.CanUndo;
-            if (DrawButton(
-                    new Rect(x, y, width, height),
-                    "UNDO",
-                    canUndo))
+            DrawRoundedPanel(_settingsRect, FrostedWhite);
+            if (GUI.Button(
+                    _settingsRect,
+                    GUIContent.none,
+                    _transparentButtonStyle))
             {
+                _settingsOpen = !_settingsOpen;
+            }
+
+            float iconPadding = _settingsRect.width * 0.27f;
+            GUI.DrawTexture(
+                new Rect(
+                    _settingsRect.x + iconPadding,
+                    _settingsRect.y + iconPadding,
+                    _settingsRect.width - iconPadding * 2f,
+                    _settingsRect.height - iconPadding * 2f),
+                _gearTexture,
+                ScaleMode.ScaleToFit,
+                true);
+        }
+
+        private void DrawSettingsOverlay()
+        {
+            DrawScreenScrim();
+            Rect card = CenteredCard(420f);
+            DrawRoundedPanel(card, CardWhite);
+            DrawAccent(new Rect(
+                card.center.x - 31f,
+                card.y + 24f,
+                62f,
+                5f),
+                DeepIndigo);
+
+            GUI.Label(
+                new Rect(
+                    card.x + 28f,
+                    card.y + 42f,
+                    card.width - 56f,
+                    60f),
+                "SETTINGS",
+                _overlayTitleStyle);
+
+            string levelName = _model == null
+                ? ""
+                : _model.DisplayName.ToUpperInvariant();
+            GUI.Label(
+                new Rect(
+                    card.x + 34f,
+                    card.y + 102f,
+                    card.width - 68f,
+                    54f),
+                $"{levelName}  ·  {_levelIndex + 1} OF {_levelCount}",
+                _overlayBodyStyle);
+
+            Rect resume = new Rect(
+                card.x + 32f,
+                card.yMax - 204f,
+                card.width - 64f,
+                52f);
+            Rect undo = new Rect(
+                resume.x,
+                resume.yMax + 14f,
+                resume.width,
+                resume.height);
+            Rect restart = new Rect(
+                undo.x,
+                undo.yMax + 14f,
+                undo.width,
+                undo.height);
+
+            if (DrawButton(resume, "RESUME", true, true))
+            {
+                _settingsOpen = false;
+            }
+
+            if (DrawButton(
+                    undo,
+                    "UNDO LAST MOVE",
+                    _model != null && _model.CanUndo,
+                    false))
+            {
+                _settingsOpen = false;
                 _controller.Undo();
             }
 
-            x += width + spacing;
             if (DrawButton(
-                    new Rect(x, y, width, height),
-                    "RETRY",
-                    _model != null))
+                    restart,
+                    "RESTART LEVEL",
+                    _model != null,
+                    false))
             {
+                _settingsOpen = false;
                 _controller.RestartLevel();
-            }
-
-            x += width + spacing;
-            if (DrawButton(
-                    new Rect(x, y, width, height),
-                    "‹ LEVEL",
-                    _levelIndex > 0))
-            {
-                _controller.PreviousLevel();
-            }
-
-            x += width + spacing;
-            if (DrawButton(
-                    new Rect(x, y, width, height),
-                    "LEVEL ›",
-                    _levelIndex + 1 < _levelCount))
-            {
-                _controller.NextLevel();
-            }
-        }
-
-        private void DrawLevelProgress()
-        {
-            if (_levelCount <= 0)
-            {
-                return;
-            }
-
-            const float segmentWidth = 24f;
-            const float segmentHeight = 4f;
-            const float spacing = 7f;
-            float totalWidth =
-                _levelCount * segmentWidth
-                + (_levelCount - 1) * spacing;
-            float x = _headerRect.x + 27f;
-            float availableWidth = _headerRect.width - 196f;
-            if (totalWidth > availableWidth)
-            {
-                x = _headerRect.x
-                    + Mathf.Max(27f, (availableWidth - totalWidth) * 0.5f);
-            }
-
-            float y = _headerRect.yMax - 13f;
-            for (int index = 0; index < _levelCount; index++)
-            {
-                Color color = index == _levelIndex
-                    ? AccentColor
-                    : index < _levelIndex
-                        ? new Color(0.52f, 0.42f, 0.78f, 1f)
-                        : new Color(0.24f, 0.20f, 0.38f, 1f);
-                DrawPanel(
-                    new Rect(
-                        x + index * (segmentWidth + spacing),
-                        y,
-                        segmentWidth,
-                        segmentHeight),
-                    color);
             }
         }
 
         private void DrawResultOverlay()
         {
-            DrawPanel(
-                new Rect(0f, 0f, Screen.width, Screen.height),
-                new Color(0.02f, 0.01f, 0.07f, 0.72f));
+            DrawScreenScrim();
+            Rect card = CenteredCard(390f);
+            DrawRoundedPanel(card, CardWhite);
 
-            Rect card = new Rect(
-                Mathf.Max(24f, Screen.width * 0.08f),
-                Screen.height * 0.35f,
-                Mathf.Min(Screen.width - 48f, 620f),
-                Mathf.Clamp(Screen.height * 0.29f, 280f, 430f));
-            card.x = (Screen.width - card.width) * 0.5f;
-            DrawPanel(
-                card,
-                _model.Phase == BoardPhase.Won
-                    ? new Color(
-                        SuccessColor.r,
-                        SuccessColor.g,
-                        SuccessColor.b,
-                        0.98f)
-                    : new Color(
-                        DangerColor.r,
-                        DangerColor.g,
-                        DangerColor.b,
-                        0.98f));
+            bool won = _model.Phase == BoardPhase.Won;
+            Color accent = won ? SuccessColor : DangerColor;
+            DrawAccent(
+                new Rect(
+                    card.center.x - 31f,
+                    card.y + 24f,
+                    62f,
+                    5f),
+                accent);
 
-            string title = _model.Phase == BoardPhase.Won
-                ? "LEVEL COMPLETE"
-                : "RINGS JAMMED";
-            string body = _model.Phase == BoardPhase.Won
-                ? "Every marble reached its matching exit."
-                : "No rotation or transfer can create progress.\n"
-                  + "Undo the last action or retry the level.";
+            string title = won ? "LEVEL COMPLETE" : "RINGS JAMMED";
+            string body = won
+                ? "Every marble reached its matching receiver."
+                : "No productive route remains. Undo the last action "
+                  + "or restart the level.";
             GUI.Label(
-                new Rect(card.x + 24f, card.y + 34f, card.width - 48f, 70f),
+                new Rect(
+                    card.x + 24f,
+                    card.y + 46f,
+                    card.width - 48f,
+                    64f),
                 title,
                 _overlayTitleStyle);
             GUI.Label(
-                new Rect(card.x + 34f, card.y + 105f, card.width - 68f, 92f),
+                new Rect(
+                    card.x + 38f,
+                    card.y + 116f,
+                    card.width - 76f,
+                    82f),
                 body,
                 _overlayBodyStyle);
 
@@ -276,16 +255,16 @@ namespace OrbitSort.UI
                 card.x + 24f,
                 card.yMax - 82f,
                 buttonWidth,
-                58f);
+                56f);
             Rect right = new Rect(
                 left.xMax + 30f,
                 left.y,
                 buttonWidth,
                 left.height);
 
-            if (_model.Phase == BoardPhase.Won)
+            if (won)
             {
-                if (DrawButton(left, "RETRY", true))
+                if (DrawButton(left, "RETRY", true, false))
                 {
                     _controller.RestartLevel();
                 }
@@ -293,20 +272,25 @@ namespace OrbitSort.UI
                 bool hasNext = _levelIndex + 1 < _levelCount;
                 if (DrawButton(
                         right,
-                        hasNext ? "NEXT LEVEL" : "LEVELS DONE",
-                        hasNext))
+                        hasNext ? "NEXT LEVEL" : "ALL DONE",
+                        hasNext,
+                        true))
                 {
                     _controller.NextLevel();
                 }
             }
             else
             {
-                if (DrawButton(left, "UNDO", _model.CanUndo))
+                if (DrawButton(
+                        left,
+                        "UNDO",
+                        _model.CanUndo,
+                        false))
                 {
                     _controller.Undo();
                 }
 
-                if (DrawButton(right, "RETRY", true))
+                if (DrawButton(right, "RETRY", true, true))
                 {
                     _controller.RestartLevel();
                 }
@@ -315,71 +299,116 @@ namespace OrbitSort.UI
 
         private void DrawFatalOverlay()
         {
-            DrawPanel(
-                new Rect(0f, 0f, Screen.width, Screen.height),
-                new Color(0.02f, 0.01f, 0.07f, 0.92f));
-            Rect card = new Rect(
-                30f,
-                Screen.height * 0.35f,
-                Screen.width - 60f,
-                300f);
-            DrawPanel(card, DangerColor);
+            DrawScreenScrim();
+            Rect card = CenteredCard(340f);
+            DrawRoundedPanel(card, CardWhite);
+            DrawAccent(
+                new Rect(
+                    card.center.x - 31f,
+                    card.y + 24f,
+                    62f,
+                    5f),
+                DangerColor);
             GUI.Label(
-                new Rect(card.x + 20f, card.y + 28f, card.width - 40f, 70f),
+                new Rect(
+                    card.x + 24f,
+                    card.y + 48f,
+                    card.width - 48f,
+                    64f),
                 "LEVEL DATA ERROR",
                 _overlayTitleStyle);
             GUI.Label(
-                new Rect(card.x + 30f, card.y + 100f, card.width - 60f, 160f),
+                new Rect(
+                    card.x + 34f,
+                    card.y + 116f,
+                    card.width - 68f,
+                    150f),
                 _fatalMessage,
                 _overlayBodyStyle);
         }
 
-        private bool DrawButton(Rect rect, string text, bool enabled)
+        private bool DrawButton(
+            Rect rect,
+            string text,
+            bool enabled,
+            bool primary)
         {
-            Color color = GUI.color;
-            GUI.color = enabled ? ButtonColor : ButtonDisabledColor;
-            GUI.DrawTexture(rect, _whiteTexture);
-            GUI.color = color;
+            Color color = !enabled
+                ? DisabledButton
+                : primary
+                    ? DeepIndigo
+                    : SecondaryButton;
+            DrawRoundedPanel(rect, color);
 
             bool previousEnabled = GUI.enabled;
             GUI.enabled = enabled;
-            bool clicked = GUI.Button(rect, text, _buttonStyle);
+            bool clicked = GUI.Button(
+                rect,
+                text,
+                primary ? _primaryButtonStyle : _secondaryButtonStyle);
             GUI.enabled = previousEnabled;
             return clicked;
         }
 
-        private void DrawPanel(Rect rect, Color color)
+        private void DrawScreenScrim()
+        {
+            Color previous = GUI.color;
+            GUI.color = Scrim;
+            GUI.DrawTexture(_overlayRect, _whiteTexture);
+            GUI.color = previous;
+        }
+
+        private void DrawRoundedPanel(Rect rect, Color color)
         {
             Color previous = GUI.color;
             GUI.color = color;
-            GUI.DrawTexture(rect, _whiteTexture);
+            GUI.Box(rect, GUIContent.none, _roundedStyle);
             GUI.color = previous;
+        }
+
+        private void DrawAccent(Rect rect, Color color)
+        {
+            DrawRoundedPanel(rect, color);
+        }
+
+        private Rect CenteredCard(float preferredHeight)
+        {
+            float width = Mathf.Min(Screen.width - 48f, 520f);
+            float height = Mathf.Min(
+                preferredHeight,
+                Screen.height - 80f);
+            return new Rect(
+                (Screen.width - width) * 0.5f,
+                (Screen.height - height) * 0.5f,
+                width,
+                height);
         }
 
         private void RecalculateLayout()
         {
             Rect safe = Screen.safeArea;
             float safeTop = Screen.height - safe.yMax;
-            float safeBottom = safe.y;
-            float horizontal = Mathf.Max(18f, Screen.width * 0.035f);
+            float top = safeTop + Mathf.Max(18f, Screen.height * 0.012f);
+            float controlSize = Mathf.Clamp(
+                Screen.width * 0.105f,
+                62f,
+                78f);
+            float levelWidth = Mathf.Clamp(
+                Screen.width * 0.28f,
+                172f,
+                228f);
+            float edge = Mathf.Max(18f, Screen.width * 0.052f);
 
-            _headerRect = new Rect(
-                horizontal,
-                safeTop + 18f,
-                Screen.width - horizontal * 2f,
-                Mathf.Clamp(Screen.height * 0.065f, 82f, 112f));
-            _messageRect = new Rect(
-                horizontal,
-                Screen.height - safeBottom
-                - Mathf.Clamp(Screen.height * 0.115f, 145f, 205f),
-                Screen.width - horizontal * 2f,
-                Mathf.Clamp(Screen.height * 0.045f, 62f, 82f));
-            _buttonBarRect = new Rect(
-                horizontal,
-                Screen.height - safeBottom
-                - Mathf.Clamp(Screen.height * 0.068f, 86f, 122f),
-                Screen.width - horizontal * 2f,
-                Mathf.Clamp(Screen.height * 0.058f, 76f, 102f));
+            _levelRect = new Rect(
+                (Screen.width - levelWidth) * 0.5f,
+                top,
+                levelWidth,
+                controlSize);
+            _settingsRect = new Rect(
+                safe.xMax - edge - controlSize,
+                top,
+                controlSize,
+                controlSize);
             _overlayRect = new Rect(
                 0f,
                 0f,
@@ -389,67 +418,196 @@ namespace OrbitSort.UI
 
         private void EnsureStyles()
         {
-            if (_titleStyle != null)
+            if (_levelStyle != null)
             {
                 return;
             }
 
-            _titleStyle = CreateStyle(
-                27,
+            _roundedStyle = new GUIStyle(GUI.skin.box)
+            {
+                normal = { background = _roundedTexture },
+                border = new RectOffset(22, 22, 22, 22)
+            };
+            _levelStyle = CreateStyle(
+                25,
                 FontStyle.Bold,
-                TextAnchor.MiddleLeft);
-            _titleStyle.padding = new RectOffset(27, 164, 0, 8);
+                TextAnchor.MiddleCenter,
+                DeepIndigo);
+            _overlayTitleStyle = CreateStyle(
+                34,
+                FontStyle.Bold,
+                TextAnchor.MiddleCenter,
+                DeepIndigo);
+            _overlayBodyStyle = CreateStyle(
+                20,
+                FontStyle.Normal,
+                TextAnchor.MiddleCenter,
+                new Color(0.28f, 0.30f, 0.46f, 1f));
+            _overlayBodyStyle.wordWrap = true;
+            _primaryButtonStyle = CreateButtonStyle(Color.white);
+            _secondaryButtonStyle = CreateButtonStyle(DeepIndigo);
+            _transparentButtonStyle = new GUIStyle(GUI.skin.button);
+            ClearButtonBackground(_transparentButtonStyle);
+        }
 
-            _labelStyle = CreateStyle(
+        private static GUIStyle CreateButtonStyle(Color textColor)
+        {
+            GUIStyle style = CreateStyle(
                 18,
                 FontStyle.Bold,
-                TextAnchor.MiddleCenter);
-            _messageStyle = CreateStyle(
-                21,
-                FontStyle.Bold,
-                TextAnchor.MiddleCenter);
-            _messageStyle.padding = new RectOffset(16, 16, 5, 5);
-            _messageStyle.wordWrap = true;
+                TextAnchor.MiddleCenter,
+                textColor);
+            ClearButtonBackground(style);
+            return style;
+        }
 
-            _buttonStyle = CreateStyle(
-                19,
-                FontStyle.Bold,
-                TextAnchor.MiddleCenter);
-            _buttonStyle.normal.background = null;
-            _buttonStyle.hover.background = null;
-            _buttonStyle.active.background = null;
-            _buttonStyle.focused.background = null;
-
-            _overlayTitleStyle = CreateStyle(
-                38,
-                FontStyle.Bold,
-                TextAnchor.MiddleCenter);
-            _overlayBodyStyle = CreateStyle(
-                22,
-                FontStyle.Normal,
-                TextAnchor.MiddleCenter);
-            _overlayBodyStyle.wordWrap = true;
+        private static void ClearButtonBackground(GUIStyle style)
+        {
+            style.normal.background = null;
+            style.hover.background = null;
+            style.active.background = null;
+            style.focused.background = null;
         }
 
         private static GUIStyle CreateStyle(
             int fontSize,
             FontStyle fontStyle,
-            TextAnchor alignment)
+            TextAnchor alignment,
+            Color textColor)
         {
             return new GUIStyle(GUI.skin.label)
             {
                 fontSize = fontSize,
                 fontStyle = fontStyle,
                 alignment = alignment,
-                normal = { textColor = Color.white }
+                normal = { textColor = textColor }
             };
+        }
+
+        private static Texture2D CreateSolidTexture(
+            string textureName,
+            Color color)
+        {
+            var texture = new Texture2D(
+                1,
+                1,
+                TextureFormat.RGBA32,
+                false)
+            {
+                name = textureName,
+                hideFlags = HideFlags.HideAndDontSave
+            };
+            texture.SetPixel(0, 0, color);
+            texture.Apply();
+            return texture;
+        }
+
+        private static Texture2D CreateRoundedTexture()
+        {
+            const int size = 64;
+            const float radius = 18f;
+            var texture = new Texture2D(
+                size,
+                size,
+                TextureFormat.RGBA32,
+                false)
+            {
+                name = "Orbit Sort Rounded Panel",
+                hideFlags = HideFlags.HideAndDontSave,
+                filterMode = FilterMode.Bilinear,
+                wrapMode = TextureWrapMode.Clamp
+            };
+            var pixels = new Color[size * size];
+            float center = (size - 1) * 0.5f;
+            float straight = center - radius;
+
+            for (int y = 0; y < size; y++)
+            {
+                for (int x = 0; x < size; x++)
+                {
+                    float dx = Mathf.Max(Mathf.Abs(x - center) - straight, 0f);
+                    float dy = Mathf.Max(Mathf.Abs(y - center) - straight, 0f);
+                    float distance = Mathf.Sqrt(dx * dx + dy * dy);
+                    float alpha = 1f - Mathf.SmoothStep(
+                        radius - 1.25f,
+                        radius + 0.75f,
+                        distance);
+                    pixels[y * size + x] = new Color(1f, 1f, 1f, alpha);
+                }
+            }
+
+            texture.SetPixels(pixels);
+            texture.Apply(false, true);
+            return texture;
+        }
+
+        private static Texture2D CreateGearTexture()
+        {
+            const int size = 64;
+            var texture = new Texture2D(
+                size,
+                size,
+                TextureFormat.RGBA32,
+                false)
+            {
+                name = "Orbit Sort Settings Gear",
+                hideFlags = HideFlags.HideAndDontSave,
+                filterMode = FilterMode.Bilinear,
+                wrapMode = TextureWrapMode.Clamp
+            };
+            var pixels = new Color[size * size];
+            float center = (size - 1) * 0.5f;
+
+            for (int y = 0; y < size; y++)
+            {
+                for (int x = 0; x < size; x++)
+                {
+                    float dx = x - center;
+                    float dy = y - center;
+                    float distance = Mathf.Sqrt(dx * dx + dy * dy);
+                    float angle = Mathf.Atan2(dy, dx);
+                    float teeth = Mathf.Cos(angle * 8f) > 0.12f ? 4f : 0f;
+                    float outerRadius = 21.5f + teeth;
+                    float outerAlpha = 1f - Mathf.SmoothStep(
+                        outerRadius - 1f,
+                        outerRadius + 0.7f,
+                        distance);
+                    float innerAlpha = Mathf.SmoothStep(7.6f, 9.2f, distance);
+                    float alpha = outerAlpha * innerAlpha;
+                    pixels[y * size + x] = new Color(
+                        DeepIndigo.r,
+                        DeepIndigo.g,
+                        DeepIndigo.b,
+                        alpha);
+                }
+            }
+
+            texture.SetPixels(pixels);
+            texture.Apply(false, true);
+            return texture;
         }
 
         private void OnDestroy()
         {
-            if (_whiteTexture != null)
+            ReleaseTexture(_whiteTexture);
+            ReleaseTexture(_roundedTexture);
+            ReleaseTexture(_gearTexture);
+        }
+
+        private static void ReleaseTexture(Texture2D texture)
+        {
+            if (texture == null)
             {
-                Destroy(_whiteTexture);
+                return;
+            }
+
+            if (Application.isPlaying)
+            {
+                Destroy(texture);
+            }
+            else
+            {
+                DestroyImmediate(texture);
             }
         }
     }
