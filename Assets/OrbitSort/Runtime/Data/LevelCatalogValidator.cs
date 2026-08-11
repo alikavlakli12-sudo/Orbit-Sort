@@ -165,10 +165,10 @@ namespace OrbitSort.Data
                         + $"'{expectedRingIds[ringIndex]}'.");
                 }
 
-                if (ring.capacity < 4 || ring.capacity > 32)
+                if (ring.capacity < 4 || ring.capacity > 64)
                 {
                     errors.Add(
-                        $"{ringContext}.capacity must be between 4 and 32.");
+                        $"{ringContext}.capacity must be between 4 and 64.");
                     continue;
                 }
 

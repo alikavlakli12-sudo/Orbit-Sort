@@ -148,8 +148,8 @@ def validate_level(level: dict[str, Any], context: str, errors: list[str]) -> No
         if not isinstance(capacity, int) or isinstance(capacity, bool):
             errors.append(f"{ring_context}.capacity: expected integer")
             continue
-        if not 4 <= capacity <= 32:
-            errors.append(f"{ring_context}.capacity: expected range 4-32")
+        if not 4 <= capacity <= 64:
+            errors.append(f"{ring_context}.capacity: expected range 4-64")
 
         ring_ids.append(ring_id)
         ring_capacities[ring_id] = capacity

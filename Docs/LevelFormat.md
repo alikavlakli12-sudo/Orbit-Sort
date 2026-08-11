@@ -50,7 +50,9 @@ Two-ring levels use `inner` and `outer`; three-ring levels use `inner`,
 }
 ```
 
-- `capacity` is the number of hidden positions.
+- `capacity` is the number of hidden positions. With the current 0.64-diameter
+  marble asset, the measured non-overlapping capacities are 17, 32, and 46
+  for the inner, middle, and outer physical tracks.
 - `rotationOffset` is the initial logical rotation.
 - Every marble index must be unique and inside the ring capacity.
 - Production levels start with at least one gap on every ring.

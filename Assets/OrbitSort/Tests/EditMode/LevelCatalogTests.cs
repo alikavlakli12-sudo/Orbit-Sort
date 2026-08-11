@@ -148,31 +148,91 @@ namespace OrbitSort.Tests.EditMode
             AssertEndpointSlotsStartEmpty(level);
         }
 
-        private static void AssertEndpointSlotsStartEmpty(LevelData level)
+        [Test]
+        public void ThirdLevelFillsEveryMeasuredSafeSlotWithThreeColors()
         {
+            LevelData level =
+                LevelCatalogLoader.LoadFromResources().levels[2];
             RingData inner = level.rings[0];
-            RingData outer = level.rings[1];
-            GateData gate = level.gates.Single();
+            RingData middle = level.rings[1];
+            RingData outer = level.rings[2];
 
             Assert.That(
-                inner.marbles.Any(
-                    marble => marble.index == gate.fromIndex),
-                Is.False,
-                "The inner portal endpoint must start empty.");
+                inner.capacity,
+                Is.EqualTo(MaximumNonOverlappingSlots(1.80, 0.64)));
             Assert.That(
-                outer.marbles.Any(
-                    marble => marble.index == gate.toIndex),
-                Is.False,
-                "The outer portal endpoint must start empty.");
+                middle.capacity,
+                Is.EqualTo(MaximumNonOverlappingSlots(3.28, 0.64)));
+            Assert.That(
+                outer.capacity,
+                Is.EqualTo(MaximumNonOverlappingSlots(4.76, 0.64)));
+            Assert.That(
+                inner.marbles,
+                Has.Length.EqualTo(inner.capacity - 1));
+            Assert.That(
+                middle.marbles,
+                Has.Length.EqualTo(middle.capacity - 2));
+            Assert.That(
+                outer.marbles,
+                Has.Length.EqualTo(outer.capacity - 4));
+            Assert.That(
+                level.rings.Sum(ring => ring.marbles.Length),
+                Is.EqualTo(88));
+            Assert.That(
+                level.rings
+                    .SelectMany(ring => ring.marbles)
+                    .Select(marble => marble.color)
+                    .Distinct(StringComparer.OrdinalIgnoreCase),
+                Is.EquivalentTo(new[] { "blue", "red", "yellow" }));
+            Assert.That(
+                level.exits.Select(exit => exit.color),
+                Is.EquivalentTo(new[] { "blue", "red", "yellow" }));
+
+            AssertEndpointSlotsStartEmpty(level);
+        }
+
+        private static void AssertEndpointSlotsStartEmpty(LevelData level)
+        {
+            string[] endpointKeys = level.gates
+                .SelectMany(gate => new[]
+                {
+                    $"{gate.fromRing}:{gate.fromIndex}",
+                    $"{gate.toRing}:{gate.toIndex}"
+                })
+                .Concat(level.exits.Select(
+                    exit => $"{exit.ring}:{exit.ringIndex}"))
+                .ToArray();
+            Assert.That(
+                endpointKeys
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .Count(),
+                Is.EqualTo(endpointKeys.Length),
+                "Portal and receiver fronts must use distinct slots.");
+
+            foreach (GateData gate in level.gates)
+            {
+                RingData source = level.rings.Single(
+                    ring => ring.id == gate.fromRing);
+                RingData destination = level.rings.Single(
+                    ring => ring.id == gate.toRing);
+                Assert.That(
+                    source.marbles.Any(
+                        marble => marble.index == gate.fromIndex),
+                    Is.False,
+                    $"{gate.id} source front must start empty.");
+                Assert.That(
+                    destination.marbles.Any(
+                        marble => marble.index == gate.toIndex),
+                    Is.False,
+                    $"{gate.id} destination front must start empty.");
+            }
 
             foreach (ExitData exit in level.exits)
             {
+                RingData ring = level.rings.Single(
+                    candidate => candidate.id == exit.ring);
                 Assert.That(
-                    exit.ringIndex,
-                    Is.Not.EqualTo(gate.toIndex),
-                    $"{exit.id} overlaps the outer portal endpoint.");
-                Assert.That(
-                    outer.marbles.Any(
+                    ring.marbles.Any(
                         marble => marble.index == exit.ringIndex),
                     Is.False,
                     $"{exit.id} must start empty.");
