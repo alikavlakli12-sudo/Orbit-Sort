@@ -20,6 +20,7 @@ namespace OrbitSort.Presentation
         private const string ModelResourceRoot = "Models/";
         private const float ReceiverTrackOffset = 0.91f;
         private const float CameraEdgePadding = 0.83f;
+        private const float BackdropScale = 5f;
 
         private static readonly float[] ApprovedRingRadii =
         {
@@ -727,6 +728,7 @@ namespace OrbitSort.Presentation
                 _staticRoot,
                 Vector2.zero,
                 0f);
+            geometry.transform.localScale = Vector3.one * BackdropScale;
             AssignAllRenderers(geometry, _backdropMaterial);
 
             foreach (Renderer renderer in

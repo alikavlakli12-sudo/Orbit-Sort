@@ -7,9 +7,9 @@ namespace OrbitSort.UI
     public sealed class OrbitSortHud : MonoBehaviour
     {
         private static readonly Color DeepIndigo =
-            new Color(0.16f, 0.19f, 0.38f, 1f);
+            new Color(0.10f, 0.13f, 0.32f, 1f);
         private static readonly Color FrostedWhite =
-            new Color(1f, 1f, 1f, 0.78f);
+            new Color(1f, 1f, 1f, 0.94f);
         private static readonly Color CardWhite =
             new Color(0.97f, 0.97f, 1f, 0.98f);
         private static readonly Color SecondaryButton =
@@ -32,6 +32,8 @@ namespace OrbitSort.UI
         private bool _settingsOpen;
         private Texture2D _whiteTexture;
         private Texture2D _roundedTexture;
+        private Texture2D _levelPillTexture;
+        private Texture2D _settingsButtonTexture;
         private Texture2D _gearTexture;
         private GUIStyle _roundedStyle;
         private GUIStyle _levelStyle;
@@ -50,7 +52,21 @@ namespace OrbitSort.UI
             _whiteTexture = CreateSolidTexture(
                 "Orbit Sort HUD Pixel",
                 Color.white);
-            _roundedTexture = CreateRoundedTexture();
+            _roundedTexture = CreateRoundedRectangleTexture(
+                "Orbit Sort Rounded Panel",
+                64,
+                64,
+                18f);
+            _levelPillTexture = CreateRoundedRectangleTexture(
+                "Orbit Sort Level Pill",
+                256,
+                88,
+                29f);
+            _settingsButtonTexture = CreateRoundedRectangleTexture(
+                "Orbit Sort Settings Button",
+                88,
+                88,
+                24f);
             _gearTexture = CreateGearTexture();
         }
 
@@ -113,10 +129,14 @@ namespace OrbitSort.UI
 
         private void DrawTopControls()
         {
-            DrawRoundedPanel(_levelRect, FrostedWhite);
+            DrawTopControl(
+                _levelRect,
+                _levelPillTexture);
             GUI.Label(_levelRect, _levelLabel, _levelStyle);
 
-            DrawRoundedPanel(_settingsRect, FrostedWhite);
+            DrawTopControl(
+                _settingsRect,
+                _settingsButtonTexture);
             if (GUI.Button(
                     _settingsRect,
                     GUIContent.none,
@@ -135,6 +155,38 @@ namespace OrbitSort.UI
                 _gearTexture,
                 ScaleMode.ScaleToFit,
                 true);
+        }
+
+        private void DrawTopControl(Rect rect, Texture2D texture)
+        {
+            DrawTintedTexture(
+                new Rect(
+                    rect.x,
+                    rect.y + 4f,
+                    rect.width,
+                    rect.height),
+                texture,
+                new Color(
+                    DeepIndigo.r,
+                    DeepIndigo.g,
+                    DeepIndigo.b,
+                    0.13f));
+            DrawTintedTexture(rect, texture, FrostedWhite);
+        }
+
+        private static void DrawTintedTexture(
+            Rect rect,
+            Texture texture,
+            Color color)
+        {
+            Color previous = GUI.color;
+            GUI.color = color;
+            GUI.DrawTexture(
+                rect,
+                texture,
+                ScaleMode.StretchToFill,
+                true);
+            GUI.color = previous;
         }
 
         private void DrawSettingsOverlay()
@@ -446,8 +498,7 @@ namespace OrbitSort.UI
             _overlayBodyStyle.wordWrap = true;
             _primaryButtonStyle = CreateButtonStyle(Color.white);
             _secondaryButtonStyle = CreateButtonStyle(DeepIndigo);
-            _transparentButtonStyle = new GUIStyle(GUI.skin.button);
-            ClearButtonBackground(_transparentButtonStyle);
+            _transparentButtonStyle = new GUIStyle();
         }
 
         private static GUIStyle CreateButtonStyle(Color textColor)
@@ -502,37 +553,46 @@ namespace OrbitSort.UI
             return texture;
         }
 
-        private static Texture2D CreateRoundedTexture()
+        private static Texture2D CreateRoundedRectangleTexture(
+            string textureName,
+            int width,
+            int height,
+            float radius)
         {
-            const int size = 64;
-            const float radius = 18f;
             var texture = new Texture2D(
-                size,
-                size,
+                width,
+                height,
                 TextureFormat.RGBA32,
                 false)
             {
-                name = "Orbit Sort Rounded Panel",
+                name = textureName,
                 hideFlags = HideFlags.HideAndDontSave,
                 filterMode = FilterMode.Bilinear,
                 wrapMode = TextureWrapMode.Clamp
             };
-            var pixels = new Color[size * size];
-            float center = (size - 1) * 0.5f;
-            float straight = center - radius;
+            var pixels = new Color[width * height];
+            float centerX = (width - 1) * 0.5f;
+            float centerY = (height - 1) * 0.5f;
+            float straightX = centerX - radius;
+            float straightY = centerY - radius;
 
-            for (int y = 0; y < size; y++)
+            for (int y = 0; y < height; y++)
             {
-                for (int x = 0; x < size; x++)
+                for (int x = 0; x < width; x++)
                 {
-                    float dx = Mathf.Max(Mathf.Abs(x - center) - straight, 0f);
-                    float dy = Mathf.Max(Mathf.Abs(y - center) - straight, 0f);
+                    float dx = Mathf.Max(
+                        Mathf.Abs(x - centerX) - straightX,
+                        0f);
+                    float dy = Mathf.Max(
+                        Mathf.Abs(y - centerY) - straightY,
+                        0f);
                     float distance = Mathf.Sqrt(dx * dx + dy * dy);
                     float alpha = 1f - Mathf.SmoothStep(
                         radius - 1.25f,
                         radius + 0.75f,
                         distance);
-                    pixels[y * size + x] = new Color(1f, 1f, 1f, alpha);
+                    pixels[y * width + x] =
+                        new Color(1f, 1f, 1f, alpha);
                 }
             }
 
@@ -566,14 +626,27 @@ namespace OrbitSort.UI
                     float dy = y - center;
                     float distance = Mathf.Sqrt(dx * dx + dy * dy);
                     float angle = Mathf.Atan2(dy, dx);
-                    float teeth = Mathf.Cos(angle * 8f) > 0.12f ? 4f : 0f;
-                    float outerRadius = 21.5f + teeth;
-                    float outerAlpha = 1f - Mathf.SmoothStep(
-                        outerRadius - 1f,
-                        outerRadius + 0.7f,
+                    float sector = Mathf.Repeat(
+                        angle + Mathf.PI / 8f,
+                        Mathf.PI / 4f) - Mathf.PI / 8f;
+                    float tangentialDistance =
+                        Mathf.Abs(Mathf.Sin(sector) * distance);
+                    float toothAlpha = distance >= 19.5f
+                                       && distance <= 27f
+                                       && tangentialDistance <= 4.2f
+                        ? 1f
+                        : 0f;
+                    float ringOuter = 1f - Mathf.SmoothStep(
+                        21.5f,
+                        23f,
                         distance);
-                    float innerAlpha = Mathf.SmoothStep(7.6f, 9.2f, distance);
-                    float alpha = outerAlpha * innerAlpha;
+                    float ringInner = Mathf.SmoothStep(
+                        8f,
+                        9.5f,
+                        distance);
+                    float alpha = Mathf.Max(
+                        ringOuter * ringInner,
+                        toothAlpha);
                     pixels[y * size + x] = new Color(
                         DeepIndigo.r,
                         DeepIndigo.g,
@@ -591,6 +664,8 @@ namespace OrbitSort.UI
         {
             ReleaseTexture(_whiteTexture);
             ReleaseTexture(_roundedTexture);
+            ReleaseTexture(_levelPillTexture);
+            ReleaseTexture(_settingsButtonTexture);
             ReleaseTexture(_gearTexture);
         }
 

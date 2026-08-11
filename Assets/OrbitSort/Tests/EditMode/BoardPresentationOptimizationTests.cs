@@ -132,6 +132,11 @@ namespace OrbitSort.Tests.EditMode
                         "Static Board Geometry/gate_inner_outer"),
                     Is.Not.Null);
                 Assert.That(
+                    content.Find(
+                            "Static Board Geometry/Studio Backdrop")
+                        .localScale,
+                    Is.EqualTo(Vector3.one * 5f));
+                Assert.That(
                     view.RecommendedCameraHalfWidth,
                     Is.EqualTo(5.02f).Within(0.001f));
             }
