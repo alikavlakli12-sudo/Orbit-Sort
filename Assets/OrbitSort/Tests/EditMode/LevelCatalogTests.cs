@@ -1,5 +1,7 @@
 using System;
+using System.Linq;
 using NUnit.Framework;
+using OrbitSort.Core;
 using OrbitSort.Data;
 
 namespace OrbitSort.Tests.EditMode
@@ -58,6 +60,46 @@ namespace OrbitSort.Tests.EditMode
 
             Assert.That(catalog.schemaVersion, Is.EqualTo(1));
             Assert.That(catalog.levels, Has.Length.EqualTo(1));
+        }
+
+        [Test]
+        public void PrototypeCatalogUsesTwoThenThreeRings()
+        {
+            LevelCatalogData catalog =
+                LevelCatalogLoader.LoadFromResources();
+
+            Assert.That(catalog.levels, Has.Length.EqualTo(5));
+            Assert.That(catalog.levels[0].rings, Has.Length.EqualTo(2));
+            Assert.That(catalog.levels[1].rings, Has.Length.EqualTo(2));
+            Assert.That(catalog.levels[2].rings, Has.Length.EqualTo(3));
+            Assert.That(catalog.levels[3].rings, Has.Length.EqualTo(3));
+            Assert.That(catalog.levels[4].rings, Has.Length.EqualTo(3));
+        }
+
+        [Test]
+        public void EveryPrototypeLevelStartsPlayableWithAdjacentGates()
+        {
+            LevelCatalogData catalog =
+                LevelCatalogLoader.LoadFromResources();
+
+            foreach (LevelData level in catalog.levels)
+            {
+                var model = new BoardModel(level);
+                int authoredMarbleCount = level.rings.Sum(
+                    ring => ring.marbles.Length);
+                Assert.That(
+                    model.Phase,
+                    Is.EqualTo(BoardPhase.Playing),
+                    level.id);
+                Assert.That(
+                    model.RemainingMarbles,
+                    Is.EqualTo(authoredMarbleCount),
+                    $"{level.id} starts with a marble already sorted");
+                Assert.That(
+                    model.Gates,
+                    Has.Count.EqualTo(model.Rings.Count - 1),
+                    level.id);
+            }
         }
 
         [Test]

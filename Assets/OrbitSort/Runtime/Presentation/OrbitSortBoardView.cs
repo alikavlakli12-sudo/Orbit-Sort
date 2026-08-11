@@ -18,7 +18,8 @@ namespace OrbitSort.Presentation
         private const float GravityExitDuration = 0.28f;
         private const float PortalScale = 0.08f;
         private const string ModelResourceRoot = "Models/";
-        private const float ReceiverRadius = 5.67f;
+        private const float ReceiverTrackOffset = 0.91f;
+        private const float CameraEdgePadding = 0.83f;
 
         private static readonly float[] ApprovedRingRadii =
         {
@@ -85,6 +86,9 @@ namespace OrbitSort.Presentation
         private float _previewBaseAngle;
         private float _previewTargetAngle;
         private float _previewVisualAngle;
+        private float _receiverRadius;
+
+        public float RecommendedCameraHalfWidth { get; private set; } = 6.5f;
 
         public void Initialize()
         {
@@ -218,11 +222,18 @@ namespace OrbitSort.Presentation
 
             CreateBackdrop();
 
-            if (model.Rings.Count != ApprovedRingRadii.Length)
+            if (model.Rings.Count < 2
+                || model.Rings.Count > ApprovedRingRadii.Length)
             {
                 throw new InvalidOperationException(
-                    "Orbit Sort board art requires exactly three rings.");
+                    "Orbit Sort board art supports two or three rings.");
             }
+
+            _receiverRadius =
+                ApprovedRingRadii[model.Rings.Count - 1]
+                + ReceiverTrackOffset;
+            RecommendedCameraHalfWidth =
+                _receiverRadius + CameraEdgePadding;
 
             for (int index = 0; index < model.Rings.Count; index++)
             {
@@ -688,7 +699,7 @@ namespace OrbitSort.Presentation
         {
             RingState ring = model.GetRing(exit.Ring);
             float angle = AngleForIndex(exit.RingIndex, ring.Capacity);
-            float radius = ReceiverRadius;
+            float radius = _receiverRadius;
             Vector2 point = PointOnCircle(radius, angle);
             _exitPositions[exit.Id] = point;
 

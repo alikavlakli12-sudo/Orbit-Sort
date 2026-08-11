@@ -90,7 +90,7 @@
         },
         "rings": {
           "type": "array",
-          "minItems": 3,
+          "minItems": 2,
           "maxItems": 3,
           "items": {
             "$ref": "#/$defs/ring"
@@ -98,7 +98,7 @@
         },
         "gates": {
           "type": "array",
-          "minItems": 2,
+          "minItems": 1,
           "maxItems": 2,
           "items": {
             "$ref": "#/$defs/gate"

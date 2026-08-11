@@ -6,7 +6,13 @@ namespace OrbitSort.Data
 {
     public static class LevelCatalogValidator
     {
-        private static readonly string[] ExpectedRingIds =
+        private static readonly string[] TwoRingIds =
+        {
+            "inner",
+            "outer"
+        };
+
+        private static readonly string[] ThreeRingIds =
         {
             "inner",
             "middle",
@@ -117,11 +123,15 @@ namespace OrbitSort.Data
             List<string> errors)
         {
             RingData[] rings = level.rings ?? Array.Empty<RingData>();
-            if (rings.Length != 3)
+            if (rings.Length < 2 || rings.Length > 3)
             {
-                errors.Add($"{context} must contain exactly three rings.");
+                errors.Add($"{context} must contain two or three rings.");
                 return;
             }
+
+            string[] expectedRingIds = rings.Length == 2
+                ? TwoRingIds
+                : ThreeRingIds;
 
             Dictionary<string, RingData> ringById =
                 new Dictionary<string, RingData>(
@@ -147,12 +157,12 @@ namespace OrbitSort.Data
 
                 if (!string.Equals(
                         ring.id,
-                        ExpectedRingIds[ringIndex],
+                        expectedRingIds[ringIndex],
                         StringComparison.OrdinalIgnoreCase))
                 {
                     errors.Add(
                         $"{ringContext}.id must be "
-                        + $"'{ExpectedRingIds[ringIndex]}'.");
+                        + $"'{expectedRingIds[ringIndex]}'.");
                 }
 
                 if (ring.capacity < 4 || ring.capacity > 32)
@@ -239,7 +249,9 @@ namespace OrbitSort.Data
             if (gates.Length != rings.Length - 1)
             {
                 errors.Add(
-                    $"{context} needs exactly two outward gates.");
+                    $"{context} needs exactly {rings.Length - 1} "
+                    + "outward gate"
+                    + (rings.Length == 2 ? "." : "s."));
                 return;
             }
 

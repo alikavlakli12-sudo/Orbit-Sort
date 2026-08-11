@@ -64,7 +64,7 @@ namespace OrbitSort.UI
             _levelCount = levelCount;
             _levelLabel = model == null
                 ? "ORBIT SORT"
-                : $"LEVEL {levelIndex + 1}  ·  "
+                : $"LEVEL {levelIndex + 1} / {levelCount}  ·  "
                   + model.DisplayName.ToUpperInvariant();
 
             if (!string.IsNullOrWhiteSpace(message))
@@ -102,6 +102,13 @@ namespace OrbitSort.UI
             RecalculateLayout();
 
             DrawPanel(_headerRect, PanelColor);
+            DrawPanel(
+                new Rect(
+                    _headerRect.x,
+                    _headerRect.y,
+                    6f,
+                    _headerRect.height),
+                AccentColor);
             GUI.Label(_headerRect, _levelLabel, _titleStyle);
 
             if (_model != null)
@@ -114,9 +121,11 @@ namespace OrbitSort.UI
                 DrawPanel(remainingRect, PanelSoftColor);
                 GUI.Label(
                     remainingRect,
-                    $"{_model.RemainingMarbles} LEFT",
+                    $"{_model.RemainingMarbles} MARBLES",
                     _labelStyle);
             }
+
+            DrawLevelProgress();
 
             DrawPanel(_messageRect, PanelColor);
             GUI.Label(_messageRect, _message, _messageStyle);
@@ -178,6 +187,45 @@ namespace OrbitSort.UI
                     _levelIndex + 1 < _levelCount))
             {
                 _controller.NextLevel();
+            }
+        }
+
+        private void DrawLevelProgress()
+        {
+            if (_levelCount <= 0)
+            {
+                return;
+            }
+
+            const float segmentWidth = 24f;
+            const float segmentHeight = 4f;
+            const float spacing = 7f;
+            float totalWidth =
+                _levelCount * segmentWidth
+                + (_levelCount - 1) * spacing;
+            float x = _headerRect.x + 27f;
+            float availableWidth = _headerRect.width - 196f;
+            if (totalWidth > availableWidth)
+            {
+                x = _headerRect.x
+                    + Mathf.Max(27f, (availableWidth - totalWidth) * 0.5f);
+            }
+
+            float y = _headerRect.yMax - 13f;
+            for (int index = 0; index < _levelCount; index++)
+            {
+                Color color = index == _levelIndex
+                    ? AccentColor
+                    : index < _levelIndex
+                        ? new Color(0.52f, 0.42f, 0.78f, 1f)
+                        : new Color(0.24f, 0.20f, 0.38f, 1f);
+                DrawPanel(
+                    new Rect(
+                        x + index * (segmentWidth + spacing),
+                        y,
+                        segmentWidth,
+                        segmentHeight),
+                    color);
             }
         }
 
@@ -350,10 +398,10 @@ namespace OrbitSort.UI
                 27,
                 FontStyle.Bold,
                 TextAnchor.MiddleLeft);
-            _titleStyle.padding = new RectOffset(26, 160, 0, 0);
+            _titleStyle.padding = new RectOffset(27, 164, 0, 8);
 
             _labelStyle = CreateStyle(
-                20,
+                18,
                 FontStyle.Bold,
                 TextAnchor.MiddleCenter);
             _messageStyle = CreateStyle(

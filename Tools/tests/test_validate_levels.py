@@ -28,6 +28,14 @@ class LevelCatalogValidationTests(unittest.TestCase):
 
         self.assertEqual([], errors)
 
+    def test_catalog_uses_requested_ring_progression(self) -> None:
+        ring_counts = [
+            len(level["rings"])
+            for level in self.valid_catalog["levels"]
+        ]
+
+        self.assertEqual([2, 2, 3, 3, 3], ring_counts)
+
     def test_duplicate_marble_index_is_rejected(self) -> None:
         catalog = copy.deepcopy(self.valid_catalog)
         marbles = catalog["levels"][0]["rings"][0]["marbles"]
@@ -66,33 +74,33 @@ class LevelCatalogValidationTests(unittest.TestCase):
             errors,
         )
 
-    def test_every_level_requires_three_rings(self) -> None:
+    def test_every_level_requires_two_or_three_rings(self) -> None:
         catalog = copy.deepcopy(self.valid_catalog)
         level = catalog["levels"][0]
-        level["rings"].pop(1)
-        level["gates"].pop(0)
+        level["rings"].pop()
+        level["gates"].clear()
 
         errors, _ = validate_levels.validate_catalog(catalog)
 
         self.assertTrue(
-            any("expected exactly 3 rings" in error for error in errors),
+            any("expected 2 or 3 rings" in error for error in errors),
             errors,
         )
 
-    def test_every_level_requires_two_portals(self) -> None:
+    def test_every_level_requires_one_portal_per_ring_gap(self) -> None:
         catalog = copy.deepcopy(self.valid_catalog)
         catalog["levels"][0]["gates"].pop()
 
         errors, _ = validate_levels.validate_catalog(catalog)
 
         self.assertTrue(
-            any("expected exactly 2 gates" in error for error in errors),
+            any("expected exactly 1 gate" in error for error in errors),
             errors,
         )
 
     def test_ring_ids_must_match_physical_order(self) -> None:
         catalog = copy.deepcopy(self.valid_catalog)
-        catalog["levels"][0]["rings"][1]["id"] = "second"
+        catalog["levels"][2]["rings"][1]["id"] = "second"
 
         errors, _ = validate_levels.validate_catalog(catalog)
 

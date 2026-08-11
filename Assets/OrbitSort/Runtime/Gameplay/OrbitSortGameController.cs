@@ -33,6 +33,7 @@ namespace OrbitSort.Gameplay
         private string _selectedGateId;
         private Vector2 _selectedMarbleWorldPosition;
         private float _lastCameraAspect = -1f;
+        private float _boardCameraHalfWidth = 6.5f;
 
         public BoardModel Model => _model;
         public int LevelIndex => _levelIndex;
@@ -188,6 +189,10 @@ namespace OrbitSort.Gameplay
             _levelIndex = index;
             _model = new BoardModel(_catalog.levels[index]);
             _boardView.Render(_model);
+            _boardCameraHalfWidth =
+                _boardView.RecommendedCameraHalfWidth;
+            _lastCameraAspect = -1f;
+            UpdateCameraSize();
             _hud.Refresh(
                 _model,
                 _levelIndex,
@@ -200,11 +205,18 @@ namespace OrbitSort.Gameplay
         {
             if (index == 0)
             {
-                return "Swipe a ring to rotate. Swipe an aligned marble "
-                       + "toward its portal.";
+                return "Rotate either ring, then swipe an aligned marble "
+                       + "outward through the portal.";
             }
 
-            return "Warning: filling the final outer gap can jam the board.";
+            if (index == 1)
+            {
+                return "Use the single portal to feed the outer ring "
+                       + "without filling its final gap.";
+            }
+
+            return "Two portals now connect all three rings. Keep an open "
+                   + "route to the receivers.";
         }
 
         private void BeginPointer(Vector2 screenPosition)
@@ -514,7 +526,9 @@ namespace OrbitSort.Gameplay
             }
 
             _lastCameraAspect = aspect;
-            float size = Mathf.Max(7.2f, 6.5f / aspect);
+            float size = Mathf.Max(
+                7.2f,
+                _boardCameraHalfWidth / aspect);
             if (Mathf.Abs(_camera.orthographicSize - size) > 0.0001f)
             {
                 _camera.orthographicSize = size;

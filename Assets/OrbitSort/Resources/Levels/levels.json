@@ -12,7 +12,135 @@
     {
       "id": "level_001",
       "displayName": "First Orbit",
-      "designerNotes": "Foundation data used to validate the catalog shape. Final gameplay tuning follows the deterministic board model.",
+      "designerNotes": "Two-ring onboarding placeholder. Final marble order and teaching beats will be tuned in the level-design pass.",
+      "rings": [
+        {
+          "id": "inner",
+          "capacity": 8,
+          "rotationOffset": 0,
+          "marbles": [
+            { "index": 1, "color": "blue" },
+            { "index": 3, "color": "red" },
+            { "index": 5, "color": "yellow" }
+          ]
+        },
+        {
+          "id": "outer",
+          "capacity": 12,
+          "rotationOffset": 0,
+          "marbles": [
+            { "index": 1, "color": "red" },
+            { "index": 4, "color": "blue" },
+            { "index": 7, "color": "yellow" },
+            { "index": 10, "color": "red" }
+          ]
+        }
+      ],
+      "gates": [
+        {
+          "id": "gate_inner_outer",
+          "fromRing": "inner",
+          "toRing": "outer",
+          "fromIndex": 0,
+          "toIndex": 0,
+          "direction": "outward"
+        }
+      ],
+      "exits": [
+        {
+          "id": "exit_blue",
+          "ring": "outer",
+          "ringIndex": 0,
+          "color": "blue"
+        },
+        {
+          "id": "exit_red",
+          "ring": "outer",
+          "ringIndex": 4,
+          "color": "red"
+        },
+        {
+          "id": "exit_yellow",
+          "ring": "outer",
+          "ringIndex": 8,
+          "color": "yellow"
+        }
+      ],
+      "tutorialSteps": [
+        "rotate",
+        "transfer",
+        "exit"
+      ]
+    },
+    {
+      "id": "level_002",
+      "displayName": "Open Channel",
+      "designerNotes": "Second two-ring placeholder with a lower portal and a busier outer track. Exact difficulty will be tuned next.",
+      "rings": [
+        {
+          "id": "inner",
+          "capacity": 8,
+          "rotationOffset": 0,
+          "marbles": [
+            { "index": 1, "color": "yellow" },
+            { "index": 3, "color": "blue" },
+            { "index": 5, "color": "red" },
+            { "index": 6, "color": "yellow" }
+          ]
+        },
+        {
+          "id": "outer",
+          "capacity": 12,
+          "rotationOffset": 0,
+          "marbles": [
+            { "index": 2, "color": "red" },
+            { "index": 5, "color": "blue" },
+            { "index": 7, "color": "yellow" },
+            { "index": 10, "color": "blue" },
+            { "index": 11, "color": "red" }
+          ]
+        }
+      ],
+      "gates": [
+        {
+          "id": "gate_inner_outer",
+          "fromRing": "inner",
+          "toRing": "outer",
+          "fromIndex": 4,
+          "toIndex": 6,
+          "direction": "outward"
+        }
+      ],
+      "exits": [
+        {
+          "id": "exit_blue",
+          "ring": "outer",
+          "ringIndex": 0,
+          "color": "blue"
+        },
+        {
+          "id": "exit_red",
+          "ring": "outer",
+          "ringIndex": 4,
+          "color": "red"
+        },
+        {
+          "id": "exit_yellow",
+          "ring": "outer",
+          "ringIndex": 8,
+          "color": "yellow"
+        }
+      ],
+      "tutorialSteps": [
+        "rotate",
+        "transfer",
+        "deadlock"
+      ]
+    },
+    {
+      "id": "level_003",
+      "displayName": "Triple Orbit",
+      "designerNotes": "First three-ring placeholder introducing both outward portals.",
       "rings": [
         {
           "id": "inner",
@@ -89,14 +217,13 @@
       "tutorialSteps": [
         "rotate",
         "transfer",
-        "exit",
-        "deadlock"
+        "exit"
       ]
     },
     {
-      "id": "level_002",
-      "displayName": "Jam Lesson",
-      "designerNotes": "All prototype boards use three physical rings and two outward portals. Clear space on the outer ring before feeding it.",
+      "id": "level_004",
+      "displayName": "Gate Rhythm",
+      "designerNotes": "Compact three-ring placeholder emphasizing portal order and preserving gaps.",
       "rings": [
         {
           "id": "inner",
@@ -167,8 +294,94 @@
         }
       ],
       "tutorialSteps": [
-        "rotate",
-        "transfer",
+        "deadlock"
+      ]
+    },
+    {
+      "id": "level_005",
+      "displayName": "Orbit Jam",
+      "designerNotes": "Dense three-ring placeholder reserved for the final prototype challenge. It requires a dedicated solvability and difficulty pass next.",
+      "rings": [
+        {
+          "id": "inner",
+          "capacity": 8,
+          "rotationOffset": 0,
+          "marbles": [
+            { "index": 1, "color": "blue" },
+            { "index": 2, "color": "red" },
+            { "index": 4, "color": "yellow" },
+            { "index": 6, "color": "blue" },
+            { "index": 7, "color": "red" }
+          ]
+        },
+        {
+          "id": "middle",
+          "capacity": 12,
+          "rotationOffset": 0,
+          "marbles": [
+            { "index": 1, "color": "yellow" },
+            { "index": 3, "color": "blue" },
+            { "index": 5, "color": "red" },
+            { "index": 7, "color": "yellow" },
+            { "index": 9, "color": "blue" },
+            { "index": 11, "color": "red" }
+          ]
+        },
+        {
+          "id": "outer",
+          "capacity": 16,
+          "rotationOffset": 0,
+          "marbles": [
+            { "index": 1, "color": "red" },
+            { "index": 3, "color": "yellow" },
+            { "index": 5, "color": "blue" },
+            { "index": 7, "color": "red" },
+            { "index": 9, "color": "yellow" },
+            { "index": 11, "color": "blue" },
+            { "index": 13, "color": "red" },
+            { "index": 15, "color": "yellow" }
+          ]
+        }
+      ],
+      "gates": [
+        {
+          "id": "gate_inner_middle",
+          "fromRing": "inner",
+          "toRing": "middle",
+          "fromIndex": 0,
+          "toIndex": 0,
+          "direction": "outward"
+        },
+        {
+          "id": "gate_middle_outer",
+          "fromRing": "middle",
+          "toRing": "outer",
+          "fromIndex": 6,
+          "toIndex": 8,
+          "direction": "outward"
+        }
+      ],
+      "exits": [
+        {
+          "id": "exit_blue",
+          "ring": "outer",
+          "ringIndex": 0,
+          "color": "blue"
+        },
+        {
+          "id": "exit_red",
+          "ring": "outer",
+          "ringIndex": 5,
+          "color": "red"
+        },
+        {
+          "id": "exit_yellow",
+          "ring": "outer",
+          "ringIndex": 11,
+          "color": "yellow"
+        }
+      ],
+      "tutorialSteps": [
         "deadlock"
       ]
     }

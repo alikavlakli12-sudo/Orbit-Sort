@@ -22,9 +22,11 @@ The tracks look continuous and have no visible sockets. Underneath the presentat
 Playable prototype:
 
 - Unity project pinned to `6000.4.0f1`.
-- Two JSON-authored prototype levels.
+- Five JSON-authored prototype levels: two two-ring boards followed by three
+  three-ring boards.
 - Three Blender-authored concentric ring assets with visible gaps between them.
-- Exactly two rounded, arrow-marked transfer portals.
+- One or two rounded, arrow-marked transfer portals, matching the active ring
+  count.
 - Three short color receiver tubes around the outer ring.
 - Blender-authored studio backdrop with PBR lighting and soft shadows.
 - Perpendicular orthographic top-down gameplay camera.
@@ -40,9 +42,8 @@ Playable prototype:
 - Local, Unity, and continuous-integration validation.
 
 The approved geometry is exported from Blender and imported into Unity;
-Unity does not procedurally rebuild it. Additional animation polish,
-audio, haptics, and the remaining three to eight levels follow after
-this visual milestone is approved.
+Unity does not procedurally rebuild it. The five placeholder layouts are ready
+for their dedicated difficulty, solvability, and tutorial-design pass.
 
 ## Requirements
 

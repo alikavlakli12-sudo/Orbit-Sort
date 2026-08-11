@@ -36,12 +36,13 @@ Status: complete for the current playable prototype.
 
 ## Milestone 4: Level production
 
-Status: next.
+Status: in progress.
 
 - Unity level catalog editor
 - Runtime loader and semantic validation
 - Solvability analyzer
-- Five to ten handcrafted levels
+- Five placeholder levels with the requested 2, 2, 3, 3, 3 ring progression
+- Handcrafted difficulty and solvability tuning
 - Tutorial sequencing
 
 ## Milestone 5: Mobile polish

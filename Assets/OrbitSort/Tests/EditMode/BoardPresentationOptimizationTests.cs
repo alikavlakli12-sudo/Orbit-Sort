@@ -77,7 +77,7 @@ namespace OrbitSort.Tests.EditMode
                         out string gateId,
                         out Vector2 marblePosition);
                 Assert.That(marbleSelected, Is.True);
-                Assert.That(gateId, Is.EqualTo("gate_inner_middle"));
+                Assert.That(gateId, Is.EqualTo("gate_inner_outer"));
                 Assert.That(
                     Vector2.Distance(
                         marblePosition,
@@ -96,6 +96,44 @@ namespace OrbitSort.Tests.EditMode
                         out _,
                         out _),
                     Is.False);
+            }
+            finally
+            {
+                Object.DestroyImmediate(host);
+            }
+        }
+
+        [Test]
+        public void TwoRingBoardUsesCompactGeometryAndCameraFraming()
+        {
+            GameObject host = new GameObject("Two Ring Board Test");
+            try
+            {
+                LevelCatalogData catalog =
+                    LevelCatalogLoader.LoadFromResources();
+                BoardModel model = new BoardModel(catalog.levels[0]);
+                OrbitSortBoardView view =
+                    host.AddComponent<OrbitSortBoardView>();
+                view.Initialize();
+                view.Render(model);
+
+                Transform content = host.transform.Find("Board Content");
+                Assert.That(
+                    content.Find("Dynamic Marbles/inner Ring"),
+                    Is.Not.Null);
+                Assert.That(
+                    content.Find("Dynamic Marbles/outer Ring"),
+                    Is.Not.Null);
+                Assert.That(
+                    content.Find("Dynamic Marbles/middle Ring"),
+                    Is.Null);
+                Assert.That(
+                    content.Find(
+                        "Static Board Geometry/gate_inner_outer"),
+                    Is.Not.Null);
+                Assert.That(
+                    view.RecommendedCameraHalfWidth,
+                    Is.EqualTo(5.02f).Within(0.001f));
             }
             finally
             {

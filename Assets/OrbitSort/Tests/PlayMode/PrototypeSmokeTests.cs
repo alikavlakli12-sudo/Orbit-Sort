@@ -25,7 +25,7 @@ namespace OrbitSort.Tests.PlayMode
             yield return null;
 
             Assert.That(controller.Model, Is.Not.Null);
-            Assert.That(controller.Model.Rings, Has.Count.EqualTo(3));
+            Assert.That(controller.Model.Rings, Has.Count.EqualTo(2));
             Assert.That(controller.Model.RemainingMarbles, Is.GreaterThan(0));
 
             Object.Destroy(controller.gameObject);
