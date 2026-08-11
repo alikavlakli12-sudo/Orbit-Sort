@@ -236,6 +236,51 @@ namespace OrbitSort.Tests.EditMode
             AssertEndpointSlotsStartEmpty(level);
         }
 
+        [Test]
+        public void FifthLevelFillsEveryMeasuredSafeSlotWithFourColors()
+        {
+            LevelData level =
+                LevelCatalogLoader.LoadFromResources().levels[4];
+            RingData inner = level.rings[0];
+            RingData middle = level.rings[1];
+            RingData outer = level.rings[2];
+
+            Assert.That(
+                inner.capacity,
+                Is.EqualTo(MaximumNonOverlappingSlots(1.80, 0.64)));
+            Assert.That(
+                middle.capacity,
+                Is.EqualTo(MaximumNonOverlappingSlots(3.28, 0.64)));
+            Assert.That(
+                outer.capacity,
+                Is.EqualTo(MaximumNonOverlappingSlots(4.76, 0.64)));
+            Assert.That(
+                inner.marbles,
+                Has.Length.EqualTo(inner.capacity - 1));
+            Assert.That(
+                middle.marbles,
+                Has.Length.EqualTo(middle.capacity - 2));
+            Assert.That(
+                outer.marbles,
+                Has.Length.EqualTo(outer.capacity - 5));
+            Assert.That(
+                level.rings.Sum(ring => ring.marbles.Length),
+                Is.EqualTo(87));
+            Assert.That(
+                level.rings
+                    .SelectMany(ring => ring.marbles)
+                    .Select(marble => marble.color)
+                    .Distinct(StringComparer.OrdinalIgnoreCase),
+                Is.EquivalentTo(
+                    new[] { "blue", "red", "yellow", "green" }));
+            Assert.That(
+                level.exits.Select(exit => exit.color),
+                Is.EquivalentTo(
+                    new[] { "blue", "red", "yellow", "green" }));
+
+            AssertEndpointSlotsStartEmpty(level);
+        }
+
         private static void AssertEndpointSlotsStartEmpty(LevelData level)
         {
             string[] endpointKeys = level.gates
