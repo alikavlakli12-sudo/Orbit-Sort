@@ -57,6 +57,28 @@ namespace OrbitSort.Tests.EditMode
             Assert.That(texture.mipmapCount, Is.EqualTo(1));
         }
 
+        [Test]
+        public void ImportedMarbleUsesTheAuthoredPointSixFourDiameter()
+        {
+            GameObject host = new GameObject("Marble Size Test");
+            try
+            {
+                host.transform.rotation = BlenderBoardRotation;
+                GameObject instance = Object.Instantiate(
+                    Resources.Load<GameObject>("Models/Marble"),
+                    host.transform,
+                    false);
+                Bounds bounds = CombinedBounds(instance);
+
+                Assert.That(bounds.size.x, Is.EqualTo(0.64f).Within(0.02f));
+                Assert.That(bounds.size.y, Is.EqualTo(0.64f).Within(0.02f));
+            }
+            finally
+            {
+                Object.DestroyImmediate(host);
+            }
+        }
+
         [TestCase("RingInner")]
         [TestCase("RingMiddle")]
         [TestCase("RingOuter")]

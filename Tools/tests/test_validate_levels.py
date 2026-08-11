@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import copy
 import json
+import math
 import sys
 import unittest
 from pathlib import Path
@@ -36,7 +37,7 @@ class LevelCatalogValidationTests(unittest.TestCase):
 
         self.assertEqual([2, 2, 3, 3, 3], ring_counts)
 
-    def test_first_level_uses_two_colors_and_all_safe_slots(self) -> None:
+    def test_first_level_uses_two_colors_and_all_measured_slots(self) -> None:
         level = self.valid_catalog["levels"][0]
         inner, outer = level["rings"]
         gate = level["gates"][0]
@@ -59,13 +60,29 @@ class LevelCatalogValidationTests(unittest.TestCase):
         self.assertEqual({"blue", "red"}, {
             exit_data["color"] for exit_data in level["exits"]
         })
-        self.assertEqual(7, len(inner["marbles"]))
-        self.assertEqual(9, len(outer["marbles"]))
-        self.assertEqual(16, len(inner["marbles"]) + len(outer["marbles"]))
+        self.assertEqual(
+            self.maximum_non_overlapping_slots(1.80, 0.64),
+            inner["capacity"],
+        )
+        self.assertEqual(
+            self.maximum_non_overlapping_slots(3.28, 0.64),
+            outer["capacity"],
+        )
+        self.assertEqual(inner["capacity"] - 1, len(inner["marbles"]))
+        self.assertEqual(outer["capacity"] - 3, len(outer["marbles"]))
+        self.assertEqual(45, len(inner["marbles"]) + len(outer["marbles"]))
         self.assertNotIn(gate["fromIndex"], inner_occupied)
         self.assertNotIn(gate["toIndex"], outer_occupied)
         self.assertTrue(exit_indexes.isdisjoint(outer_occupied))
         self.assertNotIn(gate["toIndex"], exit_indexes)
+
+    @staticmethod
+    def maximum_non_overlapping_slots(
+        ring_radius: float, marble_diameter: float
+    ) -> int:
+        return math.floor(
+            math.pi / math.asin(marble_diameter / (2.0 * ring_radius))
+        )
 
     def test_duplicate_marble_index_is_rejected(self) -> None:
         catalog = copy.deepcopy(self.valid_catalog)

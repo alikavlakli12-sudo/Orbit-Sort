@@ -77,7 +77,7 @@ namespace OrbitSort.Tests.EditMode
         }
 
         [Test]
-        public void FirstLevelFillsEveryNonEndpointSlotWithTwoColors()
+        public void FirstLevelFillsEveryMeasuredSafeSlotWithTwoColors()
         {
             LevelData level =
                 LevelCatalogLoader.LoadFromResources().levels[0];
@@ -85,11 +85,21 @@ namespace OrbitSort.Tests.EditMode
             RingData outer = level.rings[1];
             GateData gate = level.gates.Single();
 
-            Assert.That(inner.marbles, Has.Length.EqualTo(7));
-            Assert.That(outer.marbles, Has.Length.EqualTo(9));
+            Assert.That(
+                inner.capacity,
+                Is.EqualTo(MaximumNonOverlappingSlots(1.80, 0.64)));
+            Assert.That(
+                outer.capacity,
+                Is.EqualTo(MaximumNonOverlappingSlots(3.28, 0.64)));
+            Assert.That(
+                inner.marbles,
+                Has.Length.EqualTo(inner.capacity - 1));
+            Assert.That(
+                outer.marbles,
+                Has.Length.EqualTo(outer.capacity - 3));
             Assert.That(
                 level.rings.Sum(ring => ring.marbles.Length),
-                Is.EqualTo(16));
+                Is.EqualTo(45));
             Assert.That(
                 level.rings
                     .SelectMany(ring => ring.marbles)
@@ -123,6 +133,15 @@ namespace OrbitSort.Tests.EditMode
                     Is.False,
                     $"{exit.id} must start empty.");
             }
+        }
+
+        private static int MaximumNonOverlappingSlots(
+            double ringRadius,
+            double marbleDiameter)
+        {
+            return (int)Math.Floor(
+                Math.PI
+                / Math.Asin(marbleDiameter / (2d * ringRadius)));
         }
 
         [Test]
