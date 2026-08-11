@@ -147,6 +147,41 @@ namespace OrbitSort.Tests.EditMode
         }
 
         [Test]
+        public void FourColorBoardRendersAllMarblesAndGreenReceiver()
+        {
+            GameObject host = new GameObject("Four Color Board Test");
+            try
+            {
+                LevelCatalogData catalog =
+                    LevelCatalogLoader.LoadFromResources();
+                BoardModel model = new BoardModel(catalog.levels[3]);
+                OrbitSortBoardView view =
+                    host.AddComponent<OrbitSortBoardView>();
+                view.Initialize();
+                view.Render(model);
+
+                Transform content = host.transform.Find("Board Content");
+                Assert.That(
+                    content.Find("Dynamic Marbles/inner Ring").childCount,
+                    Is.EqualTo(16));
+                Assert.That(
+                    content.Find("Dynamic Marbles/middle Ring").childCount,
+                    Is.EqualTo(30));
+                Assert.That(
+                    content.Find("Dynamic Marbles/outer Ring").childCount,
+                    Is.EqualTo(41));
+                Assert.That(
+                    content.Find(
+                        "Static Board Geometry/green Receiver"),
+                    Is.Not.Null);
+            }
+            finally
+            {
+                Object.DestroyImmediate(host);
+            }
+        }
+
+        [Test]
         public void ResolvedExitRemainsAvailableForReceiverAnimation()
         {
             GameObject host = new GameObject("Receiver Animation Test");

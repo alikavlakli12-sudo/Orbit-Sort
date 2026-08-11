@@ -22,7 +22,7 @@ DEFAULT_CATALOG = (
 )
 DEFAULT_SCHEMA = REPOSITORY_ROOT / "Schemas" / "orbit-sort-levels.schema.json"
 
-SUPPORTED_COLORS = {"blue", "red", "yellow"}
+SUPPORTED_COLORS = {"blue", "red", "yellow", "green"}
 EXPECTED_RING_IDS = {
     2: ("inner", "outer"),
     3: ("inner", "middle", "outer"),

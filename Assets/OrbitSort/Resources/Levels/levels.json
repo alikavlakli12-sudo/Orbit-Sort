@@ -366,35 +366,114 @@
     {
       "id": "level_004",
       "displayName": "Gate Rhythm",
-      "designerNotes": "Compact three-ring placeholder emphasizing portal order and preserving gaps.",
+      "designerNotes": "Four-colour three-ring level at the measured maximum non-overlapping occupancy. Only four portal fronts and four receiver fronts start empty.",
       "rings": [
         {
           "id": "inner",
-          "capacity": 4,
+          "capacity": 17,
           "rotationOffset": 0,
           "marbles": [
             { "index": 1, "color": "blue" },
-            { "index": 2, "color": "yellow" }
+            { "index": 2, "color": "red" },
+            { "index": 3, "color": "yellow" },
+            { "index": 4, "color": "green" },
+            { "index": 5, "color": "blue" },
+            { "index": 6, "color": "red" },
+            { "index": 7, "color": "yellow" },
+            { "index": 8, "color": "green" },
+            { "index": 9, "color": "blue" },
+            { "index": 10, "color": "red" },
+            { "index": 11, "color": "yellow" },
+            { "index": 12, "color": "green" },
+            { "index": 13, "color": "blue" },
+            { "index": 14, "color": "red" },
+            { "index": 15, "color": "yellow" },
+            { "index": 16, "color": "green" }
           ]
         },
         {
           "id": "middle",
-          "capacity": 4,
+          "capacity": 32,
           "rotationOffset": 0,
           "marbles": [
-            { "index": 0, "color": "red" },
-            { "index": 1, "color": "yellow" },
-            { "index": 2, "color": "blue" }
+            { "index": 1, "color": "blue" },
+            { "index": 2, "color": "red" },
+            { "index": 3, "color": "yellow" },
+            { "index": 4, "color": "green" },
+            { "index": 5, "color": "blue" },
+            { "index": 6, "color": "red" },
+            { "index": 7, "color": "yellow" },
+            { "index": 8, "color": "green" },
+            { "index": 9, "color": "blue" },
+            { "index": 10, "color": "red" },
+            { "index": 11, "color": "yellow" },
+            { "index": 12, "color": "green" },
+            { "index": 13, "color": "blue" },
+            { "index": 14, "color": "red" },
+            { "index": 15, "color": "yellow" },
+            { "index": 17, "color": "green" },
+            { "index": 18, "color": "blue" },
+            { "index": 19, "color": "red" },
+            { "index": 20, "color": "yellow" },
+            { "index": 21, "color": "green" },
+            { "index": 22, "color": "blue" },
+            { "index": 23, "color": "red" },
+            { "index": 24, "color": "yellow" },
+            { "index": 25, "color": "green" },
+            { "index": 26, "color": "blue" },
+            { "index": 27, "color": "red" },
+            { "index": 28, "color": "yellow" },
+            { "index": 29, "color": "green" },
+            { "index": 30, "color": "blue" },
+            { "index": 31, "color": "red" }
           ]
         },
         {
           "id": "outer",
-          "capacity": 4,
+          "capacity": 46,
           "rotationOffset": 0,
           "marbles": [
-            { "index": 0, "color": "red" },
-            { "index": 1, "color": "yellow" },
-            { "index": 3, "color": "blue" }
+            { "index": 0, "color": "yellow" },
+            { "index": 1, "color": "green" },
+            { "index": 2, "color": "blue" },
+            { "index": 3, "color": "red" },
+            { "index": 4, "color": "yellow" },
+            { "index": 5, "color": "green" },
+            { "index": 7, "color": "blue" },
+            { "index": 8, "color": "red" },
+            { "index": 9, "color": "yellow" },
+            { "index": 10, "color": "green" },
+            { "index": 11, "color": "blue" },
+            { "index": 12, "color": "red" },
+            { "index": 13, "color": "yellow" },
+            { "index": 14, "color": "green" },
+            { "index": 15, "color": "blue" },
+            { "index": 16, "color": "red" },
+            { "index": 18, "color": "yellow" },
+            { "index": 19, "color": "green" },
+            { "index": 20, "color": "blue" },
+            { "index": 21, "color": "red" },
+            { "index": 22, "color": "yellow" },
+            { "index": 24, "color": "green" },
+            { "index": 25, "color": "blue" },
+            { "index": 26, "color": "red" },
+            { "index": 27, "color": "yellow" },
+            { "index": 28, "color": "green" },
+            { "index": 30, "color": "blue" },
+            { "index": 31, "color": "red" },
+            { "index": 32, "color": "yellow" },
+            { "index": 33, "color": "green" },
+            { "index": 34, "color": "blue" },
+            { "index": 35, "color": "red" },
+            { "index": 36, "color": "yellow" },
+            { "index": 37, "color": "green" },
+            { "index": 38, "color": "blue" },
+            { "index": 39, "color": "red" },
+            { "index": 41, "color": "yellow" },
+            { "index": 42, "color": "green" },
+            { "index": 43, "color": "blue" },
+            { "index": 44, "color": "red" },
+            { "index": 45, "color": "yellow" }
           ]
         }
       ],
@@ -411,8 +490,8 @@
           "id": "gate_middle_outer",
           "fromRing": "middle",
           "toRing": "outer",
-          "fromIndex": 2,
-          "toIndex": 2,
+          "fromIndex": 16,
+          "toIndex": 23,
           "direction": "outward"
         }
       ],
@@ -420,20 +499,26 @@
         {
           "id": "exit_blue",
           "ring": "outer",
-          "ringIndex": 0,
+          "ringIndex": 6,
           "color": "blue"
         },
         {
           "id": "exit_red",
           "ring": "outer",
-          "ringIndex": 1,
+          "ringIndex": 17,
           "color": "red"
         },
         {
           "id": "exit_yellow",
           "ring": "outer",
-          "ringIndex": 2,
+          "ringIndex": 29,
           "color": "yellow"
+        },
+        {
+          "id": "exit_green",
+          "ring": "outer",
+          "ringIndex": 40,
+          "color": "green"
         }
       ],
       "tutorialSteps": [

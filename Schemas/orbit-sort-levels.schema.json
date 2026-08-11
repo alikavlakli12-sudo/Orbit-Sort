@@ -35,7 +35,8 @@
       "enum": [
         "blue",
         "red",
-        "yellow"
+        "yellow",
+        "green"
       ]
     },
     "rules": {
@@ -143,7 +144,7 @@
         "capacity": {
           "type": "integer",
           "minimum": 4,
-          "maximum": 32
+          "maximum": 64
         },
         "rotationOffset": {
           "type": "integer",

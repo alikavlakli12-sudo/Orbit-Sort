@@ -163,6 +163,61 @@ class LevelCatalogValidationTests(unittest.TestCase):
         for ring_id, index in endpoint_keys:
             self.assertNotIn(index, occupied_by_ring[ring_id])
 
+    def test_fourth_level_uses_four_colors_and_all_measured_slots(self) -> None:
+        level = self.valid_catalog["levels"][3]
+        inner, middle, outer = level["rings"]
+        occupied_by_ring = {
+            ring["id"]: {marble["index"] for marble in ring["marbles"]}
+            for ring in level["rings"]
+        }
+        endpoint_keys = []
+        for gate in level["gates"]:
+            endpoint_keys.extend((
+                (gate["fromRing"], gate["fromIndex"]),
+                (gate["toRing"], gate["toIndex"]),
+            ))
+        endpoint_keys.extend(
+            (exit_data["ring"], exit_data["ringIndex"])
+            for exit_data in level["exits"]
+        )
+        color_counts = {
+            color: sum(
+                marble["color"] == color
+                for ring in level["rings"]
+                for marble in ring["marbles"]
+            )
+            for color in {"blue", "red", "yellow", "green"}
+        }
+
+        self.assertEqual(
+            self.maximum_non_overlapping_slots(1.80, 0.64),
+            inner["capacity"],
+        )
+        self.assertEqual(
+            self.maximum_non_overlapping_slots(3.28, 0.64),
+            middle["capacity"],
+        )
+        self.assertEqual(
+            self.maximum_non_overlapping_slots(4.76, 0.64),
+            outer["capacity"],
+        )
+        self.assertEqual(inner["capacity"] - 1, len(inner["marbles"]))
+        self.assertEqual(middle["capacity"] - 2, len(middle["marbles"]))
+        self.assertEqual(outer["capacity"] - 5, len(outer["marbles"]))
+        self.assertEqual(87, sum(
+            len(ring["marbles"]) for ring in level["rings"]
+        ))
+        self.assertEqual(
+            {"blue": 22, "red": 22, "yellow": 22, "green": 21},
+            color_counts,
+        )
+        self.assertEqual({"blue", "red", "yellow", "green"}, {
+            exit_data["color"] for exit_data in level["exits"]
+        })
+        self.assertEqual(len(endpoint_keys), len(set(endpoint_keys)))
+        for ring_id, index in endpoint_keys:
+            self.assertNotIn(index, occupied_by_ring[ring_id])
+
     @staticmethod
     def maximum_non_overlapping_slots(
         ring_radius: float, marble_diameter: float

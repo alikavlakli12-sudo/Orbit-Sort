@@ -9,7 +9,8 @@ namespace OrbitSort.Core
     {
         Blue,
         Red,
-        Yellow
+        Yellow,
+        Green
     }
 
     public enum BoardPhase

@@ -21,7 +21,7 @@ namespace OrbitSort.Data
 
         private static readonly HashSet<string> SupportedColors =
             new HashSet<string>(
-                new[] { "blue", "red", "yellow" },
+                new[] { "blue", "red", "yellow", "green" },
                 StringComparer.OrdinalIgnoreCase);
 
         public static void ValidateAndThrow(LevelCatalogData catalog)

@@ -166,6 +166,13 @@ namespace OrbitSort.Presentation
                     0.03f,
                     0.72f,
                     true);
+            _marbleMaterials[MarbleColor.Green] =
+                CreateMaterial(
+                    "Green Marble",
+                    new Color(0.10f, 0.72f, 0.20f),
+                    0.04f,
+                    0.73f,
+                    true);
 
             _receiverMaterials[MarbleColor.Blue] =
                 CreateMaterial(
@@ -183,6 +190,12 @@ namespace OrbitSort.Presentation
                 CreateMaterial(
                     "Yellow Receiver",
                     new Color(0.90f, 0.64f, 0.025f),
+                    0.10f,
+                    0.76f);
+            _receiverMaterials[MarbleColor.Green] =
+                CreateMaterial(
+                    "Green Receiver",
+                    new Color(0.070f, 0.67f, 0.16f),
                     0.10f,
                     0.76f);
         }

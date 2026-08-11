@@ -89,7 +89,8 @@ Prototype exits connect to the outermost ring.
 }
 ```
 
-Every marble color used by a level needs a matching exit.
+Supported marble colors are `blue`, `red`, `yellow`, and `green`. Every
+marble color used by a level needs a matching exit.
 
 ## Validation
 
