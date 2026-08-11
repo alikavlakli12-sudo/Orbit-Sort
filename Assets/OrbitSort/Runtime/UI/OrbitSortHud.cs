@@ -385,13 +385,13 @@ namespace OrbitSort.UI
             float safeTop = Screen.height - safe.yMax;
             float top = safeTop + Mathf.Max(18f, Screen.height * 0.012f);
             float controlSize = Mathf.Clamp(
-                Screen.width * 0.105f,
-                62f,
-                78f);
+                Screen.width * 0.14f,
+                82f,
+                104f);
             float levelWidth = Mathf.Clamp(
-                Screen.width * 0.28f,
-                172f,
-                228f);
+                Screen.width * 0.36f,
+                228f,
+                300f);
             float edge = Mathf.Max(18f, Screen.width * 0.052f);
 
             _levelRect = new Rect(
