@@ -76,6 +76,45 @@ class LevelCatalogValidationTests(unittest.TestCase):
         self.assertTrue(exit_indexes.isdisjoint(outer_occupied))
         self.assertNotIn(gate["toIndex"], exit_indexes)
 
+    def test_second_level_uses_three_colors_and_all_measured_slots(self) -> None:
+        level = self.valid_catalog["levels"][1]
+        inner, outer = level["rings"]
+        gate = level["gates"][0]
+        colors = {
+            marble["color"]
+            for ring in level["rings"]
+            for marble in ring["marbles"]
+        }
+        inner_occupied = {
+            marble["index"] for marble in inner["marbles"]
+        }
+        outer_occupied = {
+            marble["index"] for marble in outer["marbles"]
+        }
+        exit_indexes = {
+            exit_data["ringIndex"] for exit_data in level["exits"]
+        }
+
+        self.assertEqual({"blue", "red", "yellow"}, colors)
+        self.assertEqual({"blue", "red", "yellow"}, {
+            exit_data["color"] for exit_data in level["exits"]
+        })
+        self.assertEqual(
+            self.maximum_non_overlapping_slots(1.80, 0.64),
+            inner["capacity"],
+        )
+        self.assertEqual(
+            self.maximum_non_overlapping_slots(3.28, 0.64),
+            outer["capacity"],
+        )
+        self.assertEqual(inner["capacity"] - 1, len(inner["marbles"]))
+        self.assertEqual(outer["capacity"] - 4, len(outer["marbles"]))
+        self.assertEqual(44, len(inner["marbles"]) + len(outer["marbles"]))
+        self.assertNotIn(gate["fromIndex"], inner_occupied)
+        self.assertNotIn(gate["toIndex"], outer_occupied)
+        self.assertTrue(exit_indexes.isdisjoint(outer_occupied))
+        self.assertNotIn(gate["toIndex"], exit_indexes)
+
     @staticmethod
     def maximum_non_overlapping_slots(
         ring_radius: float, marble_diameter: float

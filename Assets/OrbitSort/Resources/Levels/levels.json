@@ -107,29 +107,64 @@
     {
       "id": "level_002",
       "displayName": "Open Channel",
-      "designerNotes": "Second two-ring placeholder with a lower portal and a busier outer track. Exact difficulty will be tuned next.",
+      "designerNotes": "Three-colour two-ring level at the measured maximum non-overlapping occupancy. Only the two portal fronts and three receiver fronts start empty.",
       "rings": [
         {
           "id": "inner",
-          "capacity": 8,
+          "capacity": 17,
           "rotationOffset": 0,
           "marbles": [
-            { "index": 1, "color": "yellow" },
-            { "index": 3, "color": "blue" },
+            { "index": 1, "color": "blue" },
+            { "index": 2, "color": "red" },
+            { "index": 3, "color": "yellow" },
+            { "index": 4, "color": "blue" },
             { "index": 5, "color": "red" },
-            { "index": 6, "color": "yellow" }
+            { "index": 6, "color": "yellow" },
+            { "index": 7, "color": "blue" },
+            { "index": 8, "color": "red" },
+            { "index": 9, "color": "yellow" },
+            { "index": 10, "color": "blue" },
+            { "index": 11, "color": "red" },
+            { "index": 12, "color": "yellow" },
+            { "index": 13, "color": "blue" },
+            { "index": 14, "color": "red" },
+            { "index": 15, "color": "yellow" },
+            { "index": 16, "color": "blue" }
           ]
         },
         {
           "id": "outer",
-          "capacity": 12,
+          "capacity": 32,
           "rotationOffset": 0,
           "marbles": [
-            { "index": 2, "color": "red" },
-            { "index": 5, "color": "blue" },
-            { "index": 7, "color": "yellow" },
+            { "index": 1, "color": "red" },
+            { "index": 2, "color": "yellow" },
+            { "index": 3, "color": "blue" },
+            { "index": 4, "color": "red" },
+            { "index": 5, "color": "yellow" },
+            { "index": 6, "color": "blue" },
+            { "index": 7, "color": "red" },
+            { "index": 9, "color": "yellow" },
             { "index": 10, "color": "blue" },
-            { "index": 11, "color": "red" }
+            { "index": 11, "color": "red" },
+            { "index": 12, "color": "yellow" },
+            { "index": 13, "color": "blue" },
+            { "index": 14, "color": "red" },
+            { "index": 15, "color": "yellow" },
+            { "index": 17, "color": "blue" },
+            { "index": 18, "color": "red" },
+            { "index": 19, "color": "yellow" },
+            { "index": 20, "color": "blue" },
+            { "index": 21, "color": "red" },
+            { "index": 22, "color": "yellow" },
+            { "index": 23, "color": "blue" },
+            { "index": 25, "color": "red" },
+            { "index": 26, "color": "yellow" },
+            { "index": 27, "color": "blue" },
+            { "index": 28, "color": "red" },
+            { "index": 29, "color": "yellow" },
+            { "index": 30, "color": "blue" },
+            { "index": 31, "color": "red" }
           ]
         }
       ],
@@ -138,8 +173,8 @@
           "id": "gate_inner_outer",
           "fromRing": "inner",
           "toRing": "outer",
-          "fromIndex": 4,
-          "toIndex": 6,
+          "fromIndex": 0,
+          "toIndex": 0,
           "direction": "outward"
         }
       ],
@@ -147,19 +182,19 @@
         {
           "id": "exit_blue",
           "ring": "outer",
-          "ringIndex": 0,
+          "ringIndex": 8,
           "color": "blue"
         },
         {
           "id": "exit_red",
           "ring": "outer",
-          "ringIndex": 4,
+          "ringIndex": 16,
           "color": "red"
         },
         {
           "id": "exit_yellow",
           "ring": "outer",
-          "ringIndex": 8,
+          "ringIndex": 24,
           "color": "yellow"
         }
       ],

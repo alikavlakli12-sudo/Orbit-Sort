@@ -83,7 +83,6 @@ namespace OrbitSort.Tests.EditMode
                 LevelCatalogLoader.LoadFromResources().levels[0];
             RingData inner = level.rings[0];
             RingData outer = level.rings[1];
-            GateData gate = level.gates.Single();
 
             Assert.That(
                 inner.capacity,
@@ -109,6 +108,51 @@ namespace OrbitSort.Tests.EditMode
             Assert.That(
                 level.exits.Select(exit => exit.color),
                 Is.EquivalentTo(new[] { "blue", "red" }));
+
+            AssertEndpointSlotsStartEmpty(level);
+        }
+
+        [Test]
+        public void SecondLevelFillsEveryMeasuredSafeSlotWithThreeColors()
+        {
+            LevelData level =
+                LevelCatalogLoader.LoadFromResources().levels[1];
+            RingData inner = level.rings[0];
+            RingData outer = level.rings[1];
+
+            Assert.That(
+                inner.capacity,
+                Is.EqualTo(MaximumNonOverlappingSlots(1.80, 0.64)));
+            Assert.That(
+                outer.capacity,
+                Is.EqualTo(MaximumNonOverlappingSlots(3.28, 0.64)));
+            Assert.That(
+                inner.marbles,
+                Has.Length.EqualTo(inner.capacity - 1));
+            Assert.That(
+                outer.marbles,
+                Has.Length.EqualTo(outer.capacity - 4));
+            Assert.That(
+                level.rings.Sum(ring => ring.marbles.Length),
+                Is.EqualTo(44));
+            Assert.That(
+                level.rings
+                    .SelectMany(ring => ring.marbles)
+                    .Select(marble => marble.color)
+                    .Distinct(StringComparer.OrdinalIgnoreCase),
+                Is.EquivalentTo(new[] { "blue", "red", "yellow" }));
+            Assert.That(
+                level.exits.Select(exit => exit.color),
+                Is.EquivalentTo(new[] { "blue", "red", "yellow" }));
+
+            AssertEndpointSlotsStartEmpty(level);
+        }
+
+        private static void AssertEndpointSlotsStartEmpty(LevelData level)
+        {
+            RingData inner = level.rings[0];
+            RingData outer = level.rings[1];
+            GateData gate = level.gates.Single();
 
             Assert.That(
                 inner.marbles.Any(
