@@ -8,8 +8,6 @@ namespace OrbitSort.UI
     {
         private static readonly Color DeepIndigo =
             new Color(0.10f, 0.13f, 0.32f, 1f);
-        private static readonly Color FrostedWhite =
-            new Color(1f, 1f, 1f, 0.94f);
         private static readonly Color CardWhite =
             new Color(0.97f, 0.97f, 1f, 0.98f);
         private static readonly Color SecondaryButton =
@@ -25,18 +23,15 @@ namespace OrbitSort.UI
 
         private OrbitSortGameController _controller;
         private BoardModel _model;
-        private string _levelLabel = "LEVEL 1";
         private string _fatalMessage;
         private int _levelIndex;
         private int _levelCount;
         private bool _settingsOpen;
         private Texture2D _whiteTexture;
         private Texture2D _roundedTexture;
-        private Texture2D _levelPillTexture;
+        private Texture2D _levelIndicatorTexture;
         private Texture2D _settingsButtonTexture;
-        private Texture2D _gearTexture;
         private GUIStyle _roundedStyle;
-        private GUIStyle _levelStyle;
         private GUIStyle _overlayTitleStyle;
         private GUIStyle _overlayBodyStyle;
         private GUIStyle _primaryButtonStyle;
@@ -57,17 +52,8 @@ namespace OrbitSort.UI
                 64,
                 64,
                 18f);
-            _levelPillTexture = CreateRoundedRectangleTexture(
-                "Orbit Sort Level Pill",
-                256,
-                88,
-                29f);
-            _settingsButtonTexture = CreateRoundedRectangleTexture(
-                "Orbit Sort Settings Button",
-                88,
-                88,
-                24f);
-            _gearTexture = CreateGearTexture();
+            _levelIndicatorTexture = LoadUiTexture("UI/LevelIndicator");
+            _settingsButtonTexture = LoadUiTexture("UI/SettingsButton");
         }
 
         public void Refresh(
@@ -78,9 +64,6 @@ namespace OrbitSort.UI
             _model = model;
             _levelIndex = levelIndex;
             _levelCount = levelCount;
-            _levelLabel = model == null
-                ? "ORBIT SORT"
-                : $"LEVEL {levelIndex + 1}";
             _fatalMessage = null;
             _settingsOpen = false;
         }
@@ -129,14 +112,17 @@ namespace OrbitSort.UI
 
         private void DrawTopControls()
         {
-            DrawTopControl(
+            GUI.DrawTexture(
                 _levelRect,
-                _levelPillTexture);
-            GUI.Label(_levelRect, _levelLabel, _levelStyle);
+                _levelIndicatorTexture,
+                ScaleMode.ScaleToFit,
+                true);
 
-            DrawTopControl(
+            GUI.DrawTexture(
                 _settingsRect,
-                _settingsButtonTexture);
+                _settingsButtonTexture,
+                ScaleMode.ScaleToFit,
+                true);
             if (GUI.Button(
                     _settingsRect,
                     GUIContent.none,
@@ -144,49 +130,6 @@ namespace OrbitSort.UI
             {
                 _settingsOpen = !_settingsOpen;
             }
-
-            float iconPadding = _settingsRect.width * 0.27f;
-            GUI.DrawTexture(
-                new Rect(
-                    _settingsRect.x + iconPadding,
-                    _settingsRect.y + iconPadding,
-                    _settingsRect.width - iconPadding * 2f,
-                    _settingsRect.height - iconPadding * 2f),
-                _gearTexture,
-                ScaleMode.ScaleToFit,
-                true);
-        }
-
-        private void DrawTopControl(Rect rect, Texture2D texture)
-        {
-            DrawTintedTexture(
-                new Rect(
-                    rect.x,
-                    rect.y + 4f,
-                    rect.width,
-                    rect.height),
-                texture,
-                new Color(
-                    DeepIndigo.r,
-                    DeepIndigo.g,
-                    DeepIndigo.b,
-                    0.13f));
-            DrawTintedTexture(rect, texture, FrostedWhite);
-        }
-
-        private static void DrawTintedTexture(
-            Rect rect,
-            Texture texture,
-            Color color)
-        {
-            Color previous = GUI.color;
-            GUI.color = color;
-            GUI.DrawTexture(
-                rect,
-                texture,
-                ScaleMode.StretchToFill,
-                true);
-            GUI.color = previous;
         }
 
         private void DrawSettingsOverlay()
@@ -470,7 +413,7 @@ namespace OrbitSort.UI
 
         private void EnsureStyles()
         {
-            if (_levelStyle != null)
+            if (_roundedStyle != null)
             {
                 return;
             }
@@ -480,11 +423,6 @@ namespace OrbitSort.UI
                 normal = { background = _roundedTexture },
                 border = new RectOffset(22, 22, 22, 22)
             };
-            _levelStyle = CreateStyle(
-                25,
-                FontStyle.Bold,
-                TextAnchor.MiddleCenter,
-                DeepIndigo);
             _overlayTitleStyle = CreateStyle(
                 34,
                 FontStyle.Bold,
@@ -601,62 +539,15 @@ namespace OrbitSort.UI
             return texture;
         }
 
-        private static Texture2D CreateGearTexture()
+        private static Texture2D LoadUiTexture(string resourcePath)
         {
-            const int size = 64;
-            var texture = new Texture2D(
-                size,
-                size,
-                TextureFormat.RGBA32,
-                false)
+            Texture2D texture = Resources.Load<Texture2D>(resourcePath);
+            if (texture == null)
             {
-                name = "Orbit Sort Settings Gear",
-                hideFlags = HideFlags.HideAndDontSave,
-                filterMode = FilterMode.Bilinear,
-                wrapMode = TextureWrapMode.Clamp
-            };
-            var pixels = new Color[size * size];
-            float center = (size - 1) * 0.5f;
-
-            for (int y = 0; y < size; y++)
-            {
-                for (int x = 0; x < size; x++)
-                {
-                    float dx = x - center;
-                    float dy = y - center;
-                    float distance = Mathf.Sqrt(dx * dx + dy * dy);
-                    float angle = Mathf.Atan2(dy, dx);
-                    float sector = Mathf.Repeat(
-                        angle + Mathf.PI / 8f,
-                        Mathf.PI / 4f) - Mathf.PI / 8f;
-                    float tangentialDistance =
-                        Mathf.Abs(Mathf.Sin(sector) * distance);
-                    float toothAlpha = distance >= 19.5f
-                                       && distance <= 27f
-                                       && tangentialDistance <= 4.2f
-                        ? 1f
-                        : 0f;
-                    float ringOuter = 1f - Mathf.SmoothStep(
-                        21.5f,
-                        23f,
-                        distance);
-                    float ringInner = Mathf.SmoothStep(
-                        8f,
-                        9.5f,
-                        distance);
-                    float alpha = Mathf.Max(
-                        ringOuter * ringInner,
-                        toothAlpha);
-                    pixels[y * size + x] = new Color(
-                        DeepIndigo.r,
-                        DeepIndigo.g,
-                        DeepIndigo.b,
-                        alpha);
-                }
+                throw new System.InvalidOperationException(
+                    $"Missing HUD texture at Resources/{resourcePath}.");
             }
 
-            texture.SetPixels(pixels);
-            texture.Apply(false, true);
             return texture;
         }
 
@@ -664,9 +555,6 @@ namespace OrbitSort.UI
         {
             ReleaseTexture(_whiteTexture);
             ReleaseTexture(_roundedTexture);
-            ReleaseTexture(_levelPillTexture);
-            ReleaseTexture(_settingsButtonTexture);
-            ReleaseTexture(_gearTexture);
         }
 
         private static void ReleaseTexture(Texture2D texture)

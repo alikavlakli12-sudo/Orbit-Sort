@@ -41,6 +41,22 @@ namespace OrbitSort.Tests.EditMode
                 Has.Length.EqualTo(expectedRendererCount));
         }
 
+        [TestCase("UI/LevelIndicator", 938, 384)]
+        [TestCase("UI/SettingsButton", 692, 718)]
+        public void ApprovedHudTextureIsAvailableAtFullResolution(
+            string resourcePath,
+            int expectedWidth,
+            int expectedHeight)
+        {
+            Texture2D texture = Resources.Load<Texture2D>(resourcePath);
+
+            Assert.That(texture, Is.Not.Null);
+            Assert.That(texture.width, Is.EqualTo(expectedWidth));
+            Assert.That(texture.height, Is.EqualTo(expectedHeight));
+            Assert.That(texture.wrapMode, Is.EqualTo(TextureWrapMode.Clamp));
+            Assert.That(texture.mipmapCount, Is.EqualTo(1));
+        }
+
         [TestCase("RingInner")]
         [TestCase("RingMiddle")]
         [TestCase("RingOuter")]
