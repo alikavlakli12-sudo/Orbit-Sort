@@ -36,6 +36,37 @@ class LevelCatalogValidationTests(unittest.TestCase):
 
         self.assertEqual([2, 2, 3, 3, 3], ring_counts)
 
+    def test_first_level_uses_two_colors_and_all_safe_slots(self) -> None:
+        level = self.valid_catalog["levels"][0]
+        inner, outer = level["rings"]
+        gate = level["gates"][0]
+        colors = {
+            marble["color"]
+            for ring in level["rings"]
+            for marble in ring["marbles"]
+        }
+        inner_occupied = {
+            marble["index"] for marble in inner["marbles"]
+        }
+        outer_occupied = {
+            marble["index"] for marble in outer["marbles"]
+        }
+        exit_indexes = {
+            exit_data["ringIndex"] for exit_data in level["exits"]
+        }
+
+        self.assertEqual({"blue", "red"}, colors)
+        self.assertEqual({"blue", "red"}, {
+            exit_data["color"] for exit_data in level["exits"]
+        })
+        self.assertEqual(7, len(inner["marbles"]))
+        self.assertEqual(9, len(outer["marbles"]))
+        self.assertEqual(16, len(inner["marbles"]) + len(outer["marbles"]))
+        self.assertNotIn(gate["fromIndex"], inner_occupied)
+        self.assertNotIn(gate["toIndex"], outer_occupied)
+        self.assertTrue(exit_indexes.isdisjoint(outer_occupied))
+        self.assertNotIn(gate["toIndex"], exit_indexes)
+
     def test_duplicate_marble_index_is_rejected(self) -> None:
         catalog = copy.deepcopy(self.valid_catalog)
         marbles = catalog["levels"][0]["rings"][0]["marbles"]
@@ -64,13 +95,13 @@ class LevelCatalogValidationTests(unittest.TestCase):
         catalog["levels"][0]["exits"] = [
             exit_data
             for exit_data in catalog["levels"][0]["exits"]
-            if exit_data["color"] != "yellow"
+            if exit_data["color"] != "red"
         ]
 
         errors, _ = validate_levels.validate_catalog(catalog)
 
         self.assertTrue(
-            any("missing exits for colors yellow" in error for error in errors),
+            any("missing exits for colors red" in error for error in errors),
             errors,
         )
 

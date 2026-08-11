@@ -12,7 +12,7 @@
     {
       "id": "level_001",
       "displayName": "First Orbit",
-      "designerNotes": "Two-ring onboarding placeholder. Final marble order and teaching beats will be tuned in the level-design pass.",
+      "designerNotes": "Two-colour onboarding at maximum legal occupancy. The portal endpoints and both receiver endpoints start empty and use four distinct slots.",
       "rings": [
         {
           "id": "inner",
@@ -20,8 +20,12 @@
           "rotationOffset": 0,
           "marbles": [
             { "index": 1, "color": "blue" },
-            { "index": 3, "color": "red" },
-            { "index": 5, "color": "yellow" }
+            { "index": 2, "color": "red" },
+            { "index": 3, "color": "blue" },
+            { "index": 4, "color": "red" },
+            { "index": 5, "color": "red" },
+            { "index": 6, "color": "blue" },
+            { "index": 7, "color": "blue" }
           ]
         },
         {
@@ -30,9 +34,14 @@
           "rotationOffset": 0,
           "marbles": [
             { "index": 1, "color": "red" },
-            { "index": 4, "color": "blue" },
-            { "index": 7, "color": "yellow" },
-            { "index": 10, "color": "red" }
+            { "index": 2, "color": "blue" },
+            { "index": 4, "color": "red" },
+            { "index": 5, "color": "blue" },
+            { "index": 6, "color": "red" },
+            { "index": 7, "color": "blue" },
+            { "index": 8, "color": "red" },
+            { "index": 10, "color": "blue" },
+            { "index": 11, "color": "red" }
           ]
         }
       ],
@@ -50,20 +59,14 @@
         {
           "id": "exit_blue",
           "ring": "outer",
-          "ringIndex": 0,
+          "ringIndex": 3,
           "color": "blue"
         },
         {
           "id": "exit_red",
           "ring": "outer",
-          "ringIndex": 4,
+          "ringIndex": 9,
           "color": "red"
-        },
-        {
-          "id": "exit_yellow",
-          "ring": "outer",
-          "ringIndex": 8,
-          "color": "yellow"
         }
       ],
       "tutorialSteps": [

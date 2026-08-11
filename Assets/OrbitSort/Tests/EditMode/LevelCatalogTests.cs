@@ -77,6 +77,55 @@ namespace OrbitSort.Tests.EditMode
         }
 
         [Test]
+        public void FirstLevelFillsEveryNonEndpointSlotWithTwoColors()
+        {
+            LevelData level =
+                LevelCatalogLoader.LoadFromResources().levels[0];
+            RingData inner = level.rings[0];
+            RingData outer = level.rings[1];
+            GateData gate = level.gates.Single();
+
+            Assert.That(inner.marbles, Has.Length.EqualTo(7));
+            Assert.That(outer.marbles, Has.Length.EqualTo(9));
+            Assert.That(
+                level.rings.Sum(ring => ring.marbles.Length),
+                Is.EqualTo(16));
+            Assert.That(
+                level.rings
+                    .SelectMany(ring => ring.marbles)
+                    .Select(marble => marble.color)
+                    .Distinct(StringComparer.OrdinalIgnoreCase),
+                Is.EquivalentTo(new[] { "blue", "red" }));
+            Assert.That(
+                level.exits.Select(exit => exit.color),
+                Is.EquivalentTo(new[] { "blue", "red" }));
+
+            Assert.That(
+                inner.marbles.Any(
+                    marble => marble.index == gate.fromIndex),
+                Is.False,
+                "The inner portal endpoint must start empty.");
+            Assert.That(
+                outer.marbles.Any(
+                    marble => marble.index == gate.toIndex),
+                Is.False,
+                "The outer portal endpoint must start empty.");
+
+            foreach (ExitData exit in level.exits)
+            {
+                Assert.That(
+                    exit.ringIndex,
+                    Is.Not.EqualTo(gate.toIndex),
+                    $"{exit.id} overlaps the outer portal endpoint.");
+                Assert.That(
+                    outer.marbles.Any(
+                        marble => marble.index == exit.ringIndex),
+                    Is.False,
+                    $"{exit.id} must start empty.");
+            }
+        }
+
+        [Test]
         public void EveryPrototypeLevelStartsPlayableWithAdjacentGates()
         {
             LevelCatalogData catalog =

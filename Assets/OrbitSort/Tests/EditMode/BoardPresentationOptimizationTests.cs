@@ -168,10 +168,10 @@ namespace OrbitSort.Tests.EditMode
                     model.TryRotateRing("outer", -4);
 
                 Assert.That(rotation.Succeeded, Is.True);
-                Assert.That(rotation.ExitedMarbles, Is.EqualTo(1));
+                Assert.That(rotation.ExitedMarbles, Is.GreaterThan(0));
                 Assert.That(
                     view.GetPendingExitAnimationCount(model),
-                    Is.EqualTo(1));
+                    Is.EqualTo(rotation.ExitedMarbles));
             }
             finally
             {
